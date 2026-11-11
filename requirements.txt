@@ -1,0 +1,18 @@
+# Reels Maker - Python packages
+# install.bat installs these into .\venv
+# manual:  venv\Scripts\python.exe -m pip install -r requirements.txt
+
+faster-whisper
+pycapcut==0.0.4
+yt-dlp
+elevenlabs
+edge-tts
+requests
+python-dotenv
+Flask
+mutagen
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
+opencv-python
+Pillow

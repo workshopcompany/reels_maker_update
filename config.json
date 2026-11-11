@@ -1,0 +1,460 @@
+{
+  "llm": {
+    "provider": "auto",
+    "ollama_enabled": false,
+    "temperature": 0.7,
+    "max_tokens": 1000,
+    "external_keys_file": "",
+    "providers": {
+      "freebuff": {
+        "model": "claude-haiku-5.5",
+        "base_url": "https://freebuff.com/api/v1/paid"
+      },
+      "gemini": {
+        "model": "gemini-3.5-flash"
+      },
+      "groq": {
+        "model": "openai/gpt-oss-120b"
+      },
+      "openrouter": {
+        "model": "openrouter/free"
+      },
+      "ollama": {
+        "base_url": "http://127.0.0.1:11434",
+        "model": "qwen3.5-9b-q4-k-m:latest"
+      }
+    },
+    "note": "provider=auto: freebuff/openai 키 → gemini → groq → openrouter 순서로 키가 있는 것만 시도합니다. Ollama 는 ollama_enabled=true 일 때만 쓰고 자동 순서 맨 뒤입니다. 키는 .env 에서 읽고 로그에 값을 찍지 않습니다."
+  },
+  "paths": {
+    "project_root": ".",
+    "venv": "venv",
+    "whisper_model": "models/whisper/tiny",
+    "output_dir": "output",
+    "assets_dir": "assets",
+    "broll_dir": "%USERPROFILE%\\릴스자료",
+    "capcut_draft_root": "%LOCALAPPDATA%\\CapCut\\User Data\\Projects\\com.lveditor.draft",
+    "capcut_draft_name": "너구리쇼츠_초안",
+    "trending_cache": "output/trending",
+    "generated_images": "output/generated_images",
+    "generated_videos": "output/generated_videos",
+    "final_output": "output/final",
+    "note": "상대 경로는 설치 폴더 기준입니다. install.bat / run.bat 이 bootstrap.py 로 절대 경로를 채워 주므로 직접 고칠 필요가 없습니다."
+  },
+  "elevenlabs": {
+    "enabled": true,
+    "voice_id": "CwhRBWXzGAHq8TQ4Fs17",
+    "default_voice_id": "CwhRBWXzGAHq8TQ4Fs17",
+    "model_id": "eleven_multilingual_v2",
+    "output_format": "mp3_44100_128",
+    "voices": [
+      {
+        "voice_id": "CwhRBWXzGAHq8TQ4Fs17",
+        "name": "Roger - Laid-Back, Casual, Resonant",
+        "category": "premade",
+        "language": "en",
+        "gender": "male",
+        "age": "middle_aged",
+        "accent": "american"
+      },
+      {
+        "voice_id": "EXAVITQu4vr4xnSDxMaL",
+        "name": "Sarah - Mature, Reassuring, Confident",
+        "category": "premade",
+        "language": "en",
+        "gender": "female",
+        "age": "young",
+        "accent": "american"
+      },
+      {
+        "voice_id": "FGY2WhTYpPnrIDTdsKH5",
+        "name": "Laura - Enthusiast, Quirky Attitude",
+        "category": "premade",
+        "language": "en",
+        "gender": "female",
+        "age": "young",
+        "accent": "american"
+      },
+      {
+        "voice_id": "IKne3meq5aSn9XLyUdCD",
+        "name": "Charlie - Deep, Confident, Energetic",
+        "category": "premade",
+        "language": "en",
+        "gender": "male",
+        "age": "young",
+        "accent": "australian"
+      },
+      {
+        "voice_id": "JBFqnCBsd6RMkjVDRZzb",
+        "name": "George - Warm, Captivating Storyteller",
+        "category": "premade",
+        "language": "en",
+        "gender": "male",
+        "age": "middle_aged",
+        "accent": "british"
+      },
+      {
+        "voice_id": "N2lVS1w4EtoT3dr4eOWO",
+        "name": "Callum - Husky Trickster",
+        "category": "premade",
+        "language": "en",
+        "gender": "male",
+        "age": "middle_aged",
+        "accent": "american"
+      },
+      {
+        "voice_id": "SAz9YHcvj6GT2YYXdXww",
+        "name": "River - Relaxed, Neutral, Informative",
+        "category": "premade",
+        "language": "en",
+        "gender": "neutral",
+        "age": "middle_aged",
+        "accent": "american"
+      },
+      {
+        "voice_id": "SOYHLrjzK2X1ezoPC6cr",
+        "name": "Harry - Fierce Warrior",
+        "category": "premade",
+        "language": "en",
+        "gender": "male",
+        "age": "young",
+        "accent": "american"
+      },
+      {
+        "voice_id": "TX3LPaxmHKxFdv7VOQHJ",
+        "name": "Liam - Energetic, Social Media Creator",
+        "category": "premade",
+        "language": "en",
+        "gender": "male",
+        "age": "young",
+        "accent": "american"
+      },
+      {
+        "voice_id": "Xb7hH8MSUJpSbSDYk0k2",
+        "name": "Alice - Clear, Engaging Educator",
+        "category": "premade",
+        "language": "en",
+        "gender": "female",
+        "age": "middle_aged",
+        "accent": "british"
+      },
+      {
+        "voice_id": "XrExE9yKIg1WjnnlVkGX",
+        "name": "Matilda - Knowledgable, Professional",
+        "category": "premade",
+        "language": "en",
+        "gender": "female",
+        "age": "middle_aged",
+        "accent": "american"
+      },
+      {
+        "voice_id": "bIHbv24MWmeRgasZH58o",
+        "name": "Will - Relaxed Optimist",
+        "category": "premade",
+        "language": "en",
+        "gender": "male",
+        "age": "young",
+        "accent": "american"
+      },
+      {
+        "voice_id": "cgSgspJ2msm6clMCkdW9",
+        "name": "Jessica - Playful, Bright, Warm",
+        "category": "premade",
+        "language": "en",
+        "gender": "female",
+        "age": "young",
+        "accent": "american"
+      },
+      {
+        "voice_id": "cjVigY5qzO86Huf0OWal",
+        "name": "Eric - Smooth, Trustworthy",
+        "category": "premade",
+        "language": "en",
+        "gender": "male",
+        "age": "middle_aged",
+        "accent": "american"
+      },
+      {
+        "voice_id": "hpp4J3VqNfWAUOO0d1Us",
+        "name": "Bella - Professional, Bright, Warm",
+        "category": "premade",
+        "language": "en",
+        "gender": "female",
+        "age": "middle_aged",
+        "accent": "american"
+      },
+      {
+        "voice_id": "iP95p4xoKVk53GoZ742B",
+        "name": "Chris - Charming, Down-to-Earth",
+        "category": "premade",
+        "language": "en",
+        "gender": "male",
+        "age": "middle_aged",
+        "accent": "american"
+      },
+      {
+        "voice_id": "nPczCjzI2devNBz1zQrb",
+        "name": "Brian - Deep, Resonant and Comforting",
+        "category": "premade",
+        "language": "en",
+        "gender": "male",
+        "age": "middle_aged",
+        "accent": "american"
+      },
+      {
+        "voice_id": "onwK4e9ZLuTAKqWW03F9",
+        "name": "Daniel - Steady Broadcaster",
+        "category": "premade",
+        "language": "en",
+        "gender": "male",
+        "age": "middle_aged",
+        "accent": "british"
+      },
+      {
+        "voice_id": "pFZP5JQG7iQjIQuC4Bku",
+        "name": "Lily - Velvety Actress",
+        "category": "premade",
+        "language": "en",
+        "gender": "female",
+        "age": "middle_aged",
+        "accent": "british"
+      },
+      {
+        "voice_id": "pNInz6obpgDQGcFmaJgB",
+        "name": "Adam - Dominant, Firm",
+        "category": "premade",
+        "language": "en",
+        "gender": "male",
+        "age": "middle_aged",
+        "accent": "american"
+      },
+      {
+        "voice_id": "pqHfZKP75CvOlQylNhV4",
+        "name": "Bill - Wise, Mature, Balanced",
+        "category": "premade",
+        "language": "en",
+        "gender": "male",
+        "age": "old",
+        "accent": "american"
+      }
+    ],
+    "note": "음성 목록은 ElevenLabs API에서 업데이트 가능합니다. 웹의 '음성 목록 새로고침'으로 실제 계정 음성을 받아오세요. voice_id 를 직접 붙여넣어도 됩니다."
+  },
+  "tts": {
+    "provider": "auto",
+    "fallback_to_edge": true,
+    "edge_voice": "ko-KR-SunHiNeural",
+    "edge_rate": "+0%",
+    "rate_percent": 0,
+    "min_duration_sec": 3,
+    "note": "auto: .env 의 ELEVENLABS_API_KEY 로 먼저 시도하고(401/실패 시 이유를 로그에 남김), 안 되면 edge-tts(무료, 키 불필요)로 실제 음성을 만든다. 무음 더미는 만들지 않는다."
+  },
+  "ffmpeg": {
+    "framerate": 30,
+    "format": "gdigrab",
+    "default_duration_sec": 5,
+    "shorts_width": 1080,
+    "shorts_height": 1920,
+    "shorts_fps": 30
+  },
+  "persona": {
+    "name": "너구리",
+    "tone": "반말/위트",
+    "hook_seconds": 3,
+    "max_duration_sec": 60,
+    "min_chars": 260,
+    "max_chars": 350,
+    "max_chars_per_line": 12,
+    "language": "ko-KR"
+  },
+  "pipeline": {
+    "auto_approve_script": true,
+    "step_timeout_sec": 1800,
+    "retry_failed_step": 1,
+    "stop_on_failure": true,
+    "pause_after_trends": true,
+    "note": "pause_after_trends=true: 전체 자동이어도 트렌드 수집 후 멈추고, 웹에서 후보를 고르고 '확정'해야 대본 이후로 진행합니다."
+  },
+  "channel": {
+    "channel_url": "",
+    "max_videos": 25,
+    "lookback_days": 180,
+    "top_keywords": 12
+  },
+  "broll": {
+    "enabled": false,
+    "no_broll_note": "enabled=false(B-Roll 사용 안 함)면 6단계는 건너뛰고, 조립은 장면 이미지/영상 전체 화면(scenes 레이아웃) + 말풍선으로 만듭니다.",
+    "duration_sec": 5,
+    "optional": true,
+    "mode": "desktop",
+    "window_title": "",
+    "source": "",
+    "upload_dir": "output/broll_uploads",
+    "note": "mode=desktop: 전체 화면 / window: window_title 창만 / file: source(업로드한 mp4) 사용"
+  },
+  "wangp": {
+    "enabled": false,
+    "root": "",
+    "python": "",
+    "base_url": "http://127.0.0.1:7860",
+    "model_type": "auto",
+    "model_name_hint": "TextImage2video 5B",
+    "resolution": "480x832",
+    "video_length": 81,
+    "num_inference_steps": 4,
+    "guidance_scale": 1,
+    "flow_shift": 3,
+    "fastwan_lora": "Wan2_2_5B_FastWanFullAttn_lora_rank_128_bf16.safetensors",
+    "profile": 4,
+    "reserved_mem_max": 0.25,
+    "attention": "sdpa",
+    "timeout_sec": 1800,
+    "note": "WanGP(선택, 7단계 움직임 생성). 사용하려면 config.wangp.root / python 을 본인 설치 경로로 바꾸고 enabled=true 로 두세요. WanGP 웹UI(7860)를 같이 켜두면 VRAM 이 부족할 수 있습니다."
+  },
+  "scenes": {
+    "enabled": true,
+    "python": "",
+    "model_path": "models/sdxl-turbo",
+    "gen_width": 480,
+    "gen_height": 856,
+    "out_width": 1080,
+    "out_height": 1920,
+    "steps": 4,
+    "guidance": 0.0,
+    "base_seed": 20261024,
+    "scene_seconds": 3.8,
+    "min_scenes": 8,
+    "max_scenes": 14,
+    "target_sec": 45,
+    "character": "cute chubby raccoon mascot character, brown fur, big dark eye mask, cream belly, striped tail, friendly smile, standing upright like a person, no clothes",
+    "style": "2D webtoon style illustration, thick clean outlines, flat cel shading, bright saturated colors, simple colorful background",
+    "upscaler": "auto",
+    "upscayl_bin": "",
+    "upscayl_model": "realesrgan-x4plus",
+    "motion_enabled": true,
+    "motion_count": 2,
+    "bubble": {
+      "enabled": true,
+      "position": "top",
+      "font": "C:\\Windows\\Fonts\\malgunbd.ttf",
+      "font_size": 0,
+      "margin_ratio": 0.085,
+      "max_lines": 3,
+      "fill": "#ffffff",
+      "text_color": "#15202b",
+      "outline": "#15202b",
+      "opacity": 0.94,
+      "note": "B-Roll 없이 장면 이미지/영상만 쓸 때 장면별 문구를 말풍선으로 그립니다. 문구가 비어 있으면 말풍선을 그리지 않습니다. 웹 '🖼 장면 · 말풍선'에서 입력하세요."
+    },
+    "motion_resolution": "480x832",
+    "motion_frames": 81,
+    "auto_stop_wangp": true,
+    "cpu_offload": "auto",
+    "note": "5단계(장면 이미지)는 SDXL 계열 모델이 필요합니다. config.scenes.python / model_path 를 본인 환경에 맞게 설정하세요(없으면 5단계는 선택 단계라 건너뜁니다). 480x856으로 생성한 뒤 1080x1920으로 업스케일합니다."
+  },
+  "scheduler": {
+    "daily_time": "17:30",
+    "backup_time": "23:00",
+    "retry_wait_min": 25
+  },
+  "youtube": {
+    "enabled": false,
+    "default_privacy": "private",
+    "client_secret_path": "scripts/.secrets/youtube/client_secret.json",
+    "token_path": "scripts/.secrets/youtube/token.pickle"
+  },
+  "trending": {
+    "enabled": true,
+    "platform": "youtube_shorts",
+    "search_keywords": [
+      "쇼츠 자동화",
+      "AI 코딩",
+      "무료 AI 툴",
+      "클로드 무료",
+      "gpt",
+      "New",
+      "깃허브"
+    ],
+    "window_days": 21,
+    "max_results": 10,
+    "min_views": 3000,
+    "max_duration_sec": 180,
+    "enrich_top": 3,
+    "include_github": true,
+    "include_huggingface": true,
+    "cache_hours": 24
+  },
+  "image_generation": {
+    "enabled": true,
+    "default_model": "sdxl_turbo",
+    "models": {
+      "sdxl_turbo": {
+        "path": "models/sdxl-turbo",
+        "type": "diffusers",
+        "precision": "fp16"
+      },
+      "sd35_turbo": {
+        "path": "models/sd3.5_large_turbo-q4_k_4_0.gguf",
+        "type": "gguf",
+        "config": "models/sd35_cfg"
+      }
+    },
+    "output_dir": "output/generated_images",
+    "default_size": [
+      1080,
+      1920
+    ],
+    "default_steps": 4,
+    "default_guidance": 0.0
+  },
+  "video_generation": {
+    "enabled": true,
+    "default_model": "wan22_ti2v",
+    "models": {
+      "wan22_ti2v": {
+        "path": "models/Wan2.2-TI2V-5B-Q4_K_M.gguf",
+        "type": "gguf",
+        "backend": "wangp_server",
+        "base_url": "http://127.0.0.1:7860",
+        "task_type": "ti2v",
+        "default_duration_sec": 5,
+        "default_resolution": [
+          1080,
+          1920
+        ],
+        "fps": 30
+      }
+    },
+    "output_dir": "output/generated_videos",
+    "fallback_to_muapi": true,
+    "muapi_base_url": "https://api.muapi.ai/api/v1",
+    "muapi_api_key": ""
+  },
+  "capcut": {
+    "include_text_track": false,
+    "draft_name": "너구리쇼츠_초안",
+    "note": "include_text_track=false: Whisper tiny가 받아쓴 글자는 정확도가 낮아 CapCut 텍스트 트랙을 만들지 않습니다. 자막은 유튜브/릴스가 자동 생성하도록 둡니다."
+  },
+  "assembly": {
+    "enabled": true,
+    "layout": "scenes",
+    "note": "layout=split(상단 영상+하단 장면) / full(배경 위 B-Roll) / scenes(B-Roll 없이 장면 이미지·영상 전체 화면). B-Roll 을 '사용 안 함'으로 저장하면 자동으로 scenes 로 바뀝니다.",
+    "top_ratio": 0.5,
+    "scene_fit": "cover",
+    "scene_anchor": "top",
+    "top_source": "none",
+    "bottom_source": "scenes",
+    "final_output": "output/final",
+    "include_subtitles": false,
+    "subtitle_style": "MarginV=30,Outline=2,Shadow=1",
+    "include_background_music": false,
+    "video_codec": "libx264",
+    "audio_codec": "aac",
+    "crf": 23,
+    "per_scene_broll": false
+  },
+  "whisper": {
+    "fallback_model": "tiny",
+    "note": "paths.whisper_model 폴더에 로컬 모델이 없으면 faster-whisper 가 이 크기의 모델을 내려받습니다."
+  }
+}

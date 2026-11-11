@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🦝 너구리 쇼츠 파이프라인</title>
+<style>
+  :root{
+    --bg:#f4f6f8; --card:#fff; --ink:#1d2733; --muted:#6b7a8c; --line:#e3e8ee;
+    --brand:#e2563b; --brand-d:#c9452c; --ok:#1f9d55; --warn:#d98c00; --err:#d64545;
+    --run:#2f6fed; --chip:#eef2f7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,-apple-system,sans-serif;font-size:14px}
+  a{color:#2563c9;text-decoration:none} a:hover{text-decoration:underline}
+  .wrap{max-width:1120px;margin:0 auto;padding:18px 18px 80px}
+  header.top{position:sticky;top:0;z-index:20;background:rgba(244,246,248,.94);backdrop-filter:blur(6px);
+             border-bottom:1px solid var(--line);margin:-18px -18px 16px;padding:14px 18px}
+  .topline{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  h1{font-size:19px;margin:0;letter-spacing:-.3px}
+  h1 span{color:var(--brand)}
+  .spacer{flex:1}
+  .btn{border:1px solid transparent;border-radius:8px;padding:8px 13px;font-weight:700;font-size:13px;
+       cursor:pointer;background:var(--chip);color:var(--ink);transition:.15s}
+  .btn:hover{filter:brightness(.97)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.primary{background:var(--brand);color:#fff}
+  .btn.primary:hover{background:var(--brand-d)}
+  .btn.ghost{background:#fff;border-color:var(--line)}
+  .btn.sm{padding:5px 9px;font-size:12px;border-radius:6px}
+  .btn.danger{background:#fdecec;color:#a32222}
+  .progress{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:12px;color:var(--muted)}
+  .bar{flex:1;height:8px;border-radius:99px;background:#e2e7ee;overflow:hidden}
+  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f0a24a,var(--brand));transition:width .4s}
+  .seg{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--muted)}
+  .seg b{color:var(--ink)}
+  .mode{display:flex;background:#e9eef4;border-radius:9px;padding:3px}
+  .mode button{border:0;background:transparent;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:700;
+               color:var(--muted);cursor:pointer}
+  .mode button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .grid{display:grid;gap:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 16px;
+        box-shadow:0 1px 2px rgba(17,26,38,.04)}
+  .card.running{border-color:#bcd0ff;box-shadow:0 0 0 3px rgba(47,111,237,.09)}
+  .card.failed{border-color:#f2c4c4}
+  .card.done{border-color:#c8e6d3}
+  .step-head{display:flex;align-items:flex-start;gap:12px}
+  .num{width:28px;height:28px;border-radius:50%;background:var(--chip);display:grid;place-items:center;
+       font-weight:800;font-size:13px;color:var(--muted);flex:none;margin-top:1px}
+  .card.done .num{background:#e2f5ea;color:var(--ok)}
+  .card.running .num{background:#e6efff;color:var(--run)}
+  .card.failed .num{background:#fdeaea;color:var(--err)}
+  .step-title{font-weight:800;font-size:15px}
+  .step-desc{color:var(--muted);font-size:12.5px;margin-top:3px;line-height:1.5}
+  .badge{font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;background:var(--chip);color:var(--muted);
+         white-space:nowrap}
+  .badge.done{background:#e2f5ea;color:var(--ok)}
+  .badge.running{background:#e6efff;color:var(--run)}
+  .badge.failed{background:#fdeaea;color:var(--err)}
+  .badge.skipped{background:#f4f1e4;color:#8a6d00}
+  .badge.optional{background:#f2eefb;color:#6b4fa8}
+  .actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+  .note{margin-top:10px;font-size:12.5px;padding:8px 10px;border-radius:8px;background:#faf7ec;color:#7a5c00;border:1px solid #f0e6c8}
+  .note.err{background:#fdf1f1;color:#9b2b2b;border-color:#f5d3d3}
+  /* 산출물이 많아도 카드가 커지지 않게: 높이를 고정하고 스크롤 */
+  .artifacts{margin-top:10px;display:grid;gap:8px;max-height:420px;overflow-y:auto;
+             padding-right:4px;overscroll-behavior:contain}
+  .art{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:#fbfcfe}
+  .art img{width:54px;height:72px;object-fit:cover;border-radius:6px;flex:none;background:#ddd}
+  .art video{width:120px;border-radius:6px;flex:none;background:#000}
+  .art audio{height:32px;flex:1;min-width:140px}
+  .art .meta{flex:1;min-width:0}
+  .art .nm{font-weight:700;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .art .sub{color:var(--muted);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  details.log{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+  details.log summary{cursor:pointer;font-size:12px;color:var(--muted);font-weight:700}
+  pre.log{margin:8px 0 0;background:#101722;color:#d3e0ee;padding:11px;border-radius:8px;max-height:260px;
+          overflow:auto;font-size:11.5px;line-height:1.55;white-space:pre-wrap;word-break:break-all}
+  h2.sec{font-size:15px;margin:26px 0 10px;display:flex;align-items:center;gap:8px}
+  h2.sec small{font-weight:400;color:var(--muted);font-size:12px}
+  .kv{display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--muted);margin-top:10px}
+  .kv span{background:var(--chip);padding:4px 9px;border-radius:99px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;position:sticky;top:0;background:#fff}
+  tr.sel{background:#fff6f2}
+  tr.sel td{font-weight:600}
+  .num-right{text-align:right;white-space:nowrap}
+  .chip{display:inline-block;background:var(--chip);border-radius:99px;padding:2px 7px;font-size:11px;color:var(--muted);margin:1px 2px 1px 0}
+  .chip.ok{background:#e2f5ea;color:var(--ok)} .chip.bad{background:#fdeaea;color:var(--err)}
+  .scroll{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:9px;background:#fff}
+  textarea{width:100%;min-height:150px;border:1px solid var(--line);border-radius:9px;padding:11px;
+           font-family:inherit;font-size:13.5px;line-height:1.6;resize:vertical;background:#fff}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:9px}
+  .muted{color:var(--muted)}
+  .toast{position:fixed;right:18px;bottom:18px;background:#1d2733;color:#fff;padding:11px 14px;border-radius:10px;
+         font-size:13px;max-width:380px;opacity:0;transform:translateY(8px);transition:.25s;z-index:100;pointer-events:none}
+  .toast.on{opacity:1;transform:none}
+  .toast.err{background:#a32222}
+  .empty{color:var(--muted);font-size:12.5px;padding:12px;text-align:center}
+  .ref{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.6}
+  .ref b{color:var(--ink)}
+  input[type=text],input[type=number],select{border:1px solid var(--line);border-radius:8px;padding:7px 9px;
+       background:#fff;font-family:inherit;font-size:13px;color:var(--ink)}
+  .modal{position:fixed;inset:0;background:rgba(17,26,38,.55);display:none;z-index:90;padding:40px 16px}
+  .modal.on{display:block}
+  .modal-box{max-width:1060px;margin:0 auto;background:#fff;border-radius:14px;padding:16px;max-height:calc(100vh - 80px);
+             display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.28)}
+  .modal-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .modal-body{overflow:auto;border:1px solid var(--line);border-radius:9px}
+  .pause-card{border-color:#f0c36d;background:#fffaf0}
+  @media (max-width:640px){.art video{width:86px}.wrap{padding:12px 12px 60px}header.top{margin:-12px -12px 12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="topline">
+      <h1>🦝 <span>너구리</span> 쇼츠 파이프라인</h1>
+      <div class="spacer"></div>
+      <div class="mode" id="mode" title="수동 단계: 한 번에 한 단계씩 / 전체 자동: 실행을 누르면 끝까지 이어서 실행">
+        <button data-mode="manual">수동 단계</button>
+        <button data-mode="auto">전체 자동</button>
+      </div>
+      <button class="btn primary" id="btn-next">다음 단계 실행</button>
+      <button class="btn ghost" id="btn-auto">전체 자동 실행</button>
+      <button class="btn danger" id="btn-reset">초기화</button>
+    </div>
+    <div class="progress">
+      <div class="bar"><i id="bar"></i></div>
+      <span id="ptext">0 / 0</span>
+      <span id="ptime" class="muted"></span>
+    </div>
+    <div class="seg" id="env"></div>
+  </header>
+
+  <div id="summary"></div>
+
+  <h2 class="sec">📋 단계 <small>각 단계는 앞 단계가 완료되어야 실행됩니다</small></h2>
+  <div class="grid" id="steps"></div>
+
+  <div id="trendSec"></div>
+  <div id="llmSec"></div>
+  <div id="ttsSec"></div>
+  <div id="scenesSec"></div>
+  <div id="brollSec"></div>
+  <div id="wangpSec"></div>
+  <div id="scriptSec"></div>
+  <div id="capcutSec"></div>
+  <div id="ytSec"></div>
+</div>
+<div class="modal" id="trendModal"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const INITIAL = {{ initial|tojson }};
+let STATE = INITIAL;
+let dirty = false;
+let busy = false;
+const logOpen = new Set();
+
+const $ = (s, r=document) => r.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const _sig = {};
+function sig(key, data){ const s = JSON.stringify(data); if(_sig[key]===s) return false; _sig[key]=s; return true; }
+const fmt = (n) => (n ?? 0).toLocaleString("ko-KR");
+const fmtSize = (n) => n > 1048576 ? (n/1048576).toFixed(1)+"MB" : (n > 1024 ? (n/1024).toFixed(0)+"KB" : n+"B");
+
+function toast(msg, err=false){
+  const t = $("#toast");
+  t.textContent = msg; t.className = "toast on" + (err ? " err" : "");
+  clearTimeout(t._h); t._h = setTimeout(()=>{ t.className="toast"; }, 4200);
+}
+async function api(url, body){
+  const r = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body||{})});
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok || d.error) throw new Error(d.error || ("HTTP "+r.status));
+  return d;
+}
+
+const STATUS_KR = {pending:"대기", running:"실행 중", done:"완료", failed:"실패", skipped:"건너뜀"};
+
+/* ---------------- 상단 요약 ---------------- */
+function renderHeader(){
+  const p = STATE.progress || {done:0,total:0,percent:0};
+  $("#bar").style.width = p.percent + "%";
+  $("#ptext").textContent = `완료 ${p.done}${p.skipped ? ` · 건너뜀 ${p.skipped}` : ""} / ${p.total} (${p.percent}%)`;
+  $("#ptime").textContent = (STATE.running ? "⏳ 실행 중 · " : "") + "업데이트 " + (STATE.now||"");
+  document.querySelectorAll("#mode button").forEach(b=>b.classList.toggle("on", b.dataset.mode === (STATE.mode||"manual")));
+
+  const sys = STATE.system || {};
+  const chips = [];
+  const chip = (label, ok, tip) => `<span class="chip ${ok?'ok':'bad'}" title="${esc(tip||'')}">${ok?'●':'●'} ${esc(label)}</span>`;
+  const el = sys.elevenlabs || {};
+  const elLabel = el.state === "valid" ? "키 OK"
+    : el.state === "invalid" ? "키 무효(401)"
+    : el.state === "placeholder" ? "플레이스홀더" : "키 없음";
+  chips.push(chip("ElevenLabs " + elLabel, !!el.verified,
+    (el.detail || "TTS 4단계 (.env ELEVENLABS_API_KEY)") + (el.key_len ? ` · 키 길이 ${el.key_len}자` : "")
+    + ` · 폴백: edge-tts(${el.edge_voice || 'ko-KR'})`));
+  const llm = sys.llm || {};
+  const llmReady = (llm.available || []).filter(x => x !== "ollama");
+  chips.push(chip("대본 LLM " + (llm.provider === "auto" ? (llmReady.length ? "auto(" + llmReady.join(",") + ")" : "키 없음") : llm.provider),
+    llmReady.length > 0 || llm.ollama_enabled,
+    "대본 자동 생성: .env 키. Ollama 는 웹에서 켜야 사용"));
+  chips.push(chip("Whisper " + (sys.whisper?.exists?"모델 OK":"모델 없음"), sys.whisper?.exists, sys.whisper?.path||""));
+  chips.push(chip("ffmpeg " + (sys.ffmpeg?"OK":"없음"), sys.ffmpeg, "B-Roll/조립"));
+  chips.push(chip("CapCut " + (sys.capcut_root?.exists?"폴더 OK":"폴더 없음"), sys.capcut_root?.exists, sys.capcut_root?.path||""));
+  chips.push(chip("YouTube " + (sys.youtube?.token?"인증 OK":"토큰 없음"), sys.youtube?.token, "채널 분석/업로드"));
+  $("#env").innerHTML = chips.join("");
+}
+
+function renderSummary(){
+  const ch = STATE.channel, tr = STATE.trends, cc = STATE.capcut;
+  const rows = [];
+  if(STATE.pause){
+    const p = STATE.pause;
+    rows.push(`<div class="card pause-card"><b>⏸ 자동 진행 대기</b> · ${esc(p.reason||"")}
+      <div class="ref">${esc(p.message||"")}</div>
+      <div class="row">
+        <button class="btn primary" id="pause-continue">현재 트렌드 확정 → 대본부터 자동 계속</button>
+        <button class="btn ghost" id="pause-open">전체 후보 보기</button>
+        <a class="btn ghost" href="#trendSec">트렌드 패널로</a>
+        <span class="muted">${esc(p.at||"")}</span>
+      </div></div>`);
+  }
+  if(ch){
+    rows.push(`<div class="card"><b>채널</b> · ${esc(ch.title||"")} <span class="chip">구독자 ${fmt(ch.subs)}</span>
+      <span class="chip">분석 영상 ${fmt(ch.videos)}</span>${ch.cadence!=null?`<span class="chip">업로드 간격 ${ch.cadence}일</span>`:""}
+      <div class="ref">주제 키워드: ${(ch.keywords||[]).slice(0,10).map(k=>`<span class="chip">${esc(k)}</span>`).join("") || "-"}
+      <br>수집: <b>${esc(ch.source||"-")}</b> · 자세히는 <code>output/channel_analysis.md</code></div></div>`);
+  }
+  if(tr && tr.selected){
+    rows.push(`<div class="card"><b>선택된 트렌드</b> · <a href="${esc(tr.selected.url)}" target="_blank" rel="noreferrer">${esc(tr.selected.title)}</a>
+      <span class="chip">${esc(tr.selected.source)}</span><span class="chip">점수 ${esc(tr.selected.score)}</span>
+      <div class="ref">이유: ${esc(tr.selected.reason||"")}</div></div>`);
+  }
+  const v = STATE.voice;
+  if(v){
+    rows.push(`<div class="card"><b>음성</b> · ${esc(v.provider || "?")} <span class="chip">${esc(v.duration_sec)}초</span>
+      <span class="chip">${esc(v.voice_id || "")}</span>
+      ${v.fallback ? '<span class="chip bad">폴백 사용</span>' : ''}
+      <div class="ref">${v.fallback ? "앞선 시도 실패: " + esc((v.skipped_providers || []).join(" / " )) : "설정된 TTS 로 생성됨"}</div></div>`);
+  }
+  if(cc){
+    rows.push(`<div class="card"><b>CapCut 초안</b> · ${esc(cc.draft_name)} <span class="chip">${cc.duration_sec}s</span>
+      <span class="chip">자막 ${(cc.tracks||[]).find(t=>t.type==="text")?.clips ?? 0}</span>
+      <div class="ref"><code>${esc(cc.draft_dir)}</code></div></div>`);
+  }
+  $("#summary").innerHTML = rows.join("");
+  const cont = $("#pause-continue");
+  if(cont) cont.onclick = pauseContinue;
+  const op = $("#pause-open");
+  if(op) op.onclick = openTrendModal;
+}
+
+async function pauseContinue(){
+  const tr = STATE.trends || {};
+  if(!tr.selected || !tr.selected.title) return toast("확정할 트렌드가 없습니다.", true);
+  try{
+    const keyword = ($("#trendKeyword")?.value || tr.selected_keyword || tr.selected.keyword || "").trim();
+    await api("/api/trends/confirm", {confirmed:true, keyword});
+    toast("트렌드 확정 · 대본부터 자동 실행을 시작합니다");
+    await api("/api/run_all", {from:"script"});
+    await refresh();
+  }catch(e){ toast(e.message, true); }
+}
+
+/* ---------------- 단계 카드 ---------------- */
+function artifactHtml(step, a, i){
+  const ext = (a.name.split(".").pop()||"").toLowerCase();
+  const src = `/file/${step.id}/${i}?t=${a.mtime||0}`;   // 새로 만들면 캐시 없이 다시 받는다
+  let preview = "";
+  if(ext === "png" || ext === "jpg") preview = `<img src="${src}" alt="">`;
+  else if(ext === "mp4") preview = `<video src="${src}" preload="metadata" controls muted></video>`;
+  else if(ext === "mp3") preview = `<audio src="${src}" controls preload="none"></audio>`;
+  const meta = `<div class="meta">
+      <div class="nm">${esc(a.name)}</div>
+      <div class="sub">${fmtSize(a.size)} · ${esc(new Date(a.mtime*1000).toLocaleString("ko-KR"))}</div></div>`;
+  // 장면 이미지는 '열기/저장' 대신 그 장면만 다시 그리는 버튼을 둔다
+  const m = step.id === "scenes" ? /^scene_(\d+)\.png$/i.exec(a.name||"") : null;
+  if(m){
+    return `<div class="art">${preview}${meta}
+      <button class="btn sm primary" data-regen="${parseInt(m[1],10)}">${parseInt(m[1],10)}번 새로 생성</button></div>`;
+  }
+  return `<div class="art">${preview}${meta}
+      <a class="btn sm ghost" href="${src}" target="_blank">열기</a>
+      <a class="btn sm ghost" href="/download/${step.id}/${i}">저장</a></div>`;
+}
+
+async function regenScene(index, btn){
+  if(!confirm(`${index}번 이미지만 새로 만들까요?\n(같은 설정이면 같은 그림이 나오므로 시드를 바꿔 다시 그립니다 · 약 1~2분)`)) return;
+  const label = btn ? btn.textContent : "";
+  if(btn){ btn.disabled = true; btn.textContent = "생성 중…"; }
+  toast(`${index}번 이미지 다시 생성 중…`);
+  try{
+    const d = await api("/api/scenes/regenerate", {index});
+    toast(`${index}번 이미지 새로 생성 완료 · 9·10단계를 다시 실행하면 영상에 반영됩니다`);
+    if((d.log||[]).length) console.log("[regen]\n" + d.log.join("\n"));
+    await refresh();
+  }catch(e){
+    toast(e.message, true);
+    if(btn){ btn.disabled = false; btn.textContent = label; }
+  }
+}
+
+function renderSteps(){
+  const wrap = $("#steps");
+  const open = [];
+  wrap.querySelectorAll("details.log").forEach(d=>{ if(d.open) open.push(d.dataset.id); });
+  wrap.innerHTML = (STATE.steps||[]).map(step=>{
+    const cls = step.status;
+    const badge = `<span class="badge ${cls}">${STATUS_KR[cls]||cls}</span>`;
+    const opt = step.optional ? `<span class="badge optional">선택</span>` : "";
+    const running = step.status === "running";
+
+    let actions = "";
+    if(running){
+      // 서버가 죽어 상태만 남은 경우에도 여기서 복구할 수 있게 중단 버튼을 둔다
+      actions = `<button class="btn primary" disabled>실행 중…</button>
+        <button class="btn ghost danger" data-stop="${step.id}">⏹ 중단</button>`;
+    }else{
+      actions = `<button class="btn primary" data-run="${step.id}" ${step.can_run?"":"disabled title=\""+esc(step.blocked_reason||"")+"\""}>실행</button>`;
+      if(step.id === "script") actions += `<button class="btn ghost" data-scroll="scriptSec">대본 편집</button>`;
+      if(step.id === "broll") actions += `<button class="btn ghost" data-scroll="brollSec">B-Roll 설정</button>`;
+      if(step.id === "wangp") actions += `<button class="btn ghost" data-scroll="wangpSec">WanGP 설정</button>`;
+      if(step.status === "done" || step.status === "failed" || step.status === "skipped")
+        actions += `<button class="btn ghost" data-reset="${step.id}">초기화</button>`;
+    }
+
+    let note = "";
+    if(step.status === "failed" && step.error) note = `<div class="note err">✖ ${esc(step.error)} — 아래 로그를 확인하세요.</div>`;
+    else if(!step.can_run && step.blocked_reason && !running) note = `<div class="note">${esc(step.blocked_reason)}</div>`;
+
+    if(step.id === "capcut"){
+      // 나중에 수정할 때 잊지 않도록 화면에 남긴다
+      const asmA = STATE.assembly || {};
+      const fitTxt = asmA.scene_fit === "contain" ? "전체 보이기(블러 여백)"
+        : `꽉 채우기(${asmA.scene_anchor === "center" ? "가운데" : "머리"} 기준)`;
+      note += `<div class="note">CapCut 초안은 <b>10단계 미리보기와 같은 장면 프레임</b>으로 만듭니다
+        (장면별 B-Roll 포함 · B-Roll 칸 ${Math.round(Number(asmA.top_ratio ?? 0.5) * 100)}% · ${fitTxt}).<br>
+        B-Roll 선택이나 화면 배치를 바꾸면 이 단계도 다시 실행하세요.</div>`;
+    }
+
+    if(step.id === "wangp"){
+      // 어떤 장면을 움직일지 단계 카드에서도 바로 보이게 한다 (로그에만 있던 정보)
+      const mo = (STATE.wangp || {}).motion || {};
+      const plan = (mo.plan || []).slice().sort((a,b)=>a-b);
+      const done = mo.done || [];
+      note += `<div class="note">모션 예정 장면: <b>${plan.length ? plan.join(", ") + "번" : "없음"}</b>
+        ${done.length ? `· 완료 ${done.join(", ")}번` : ""}
+        <button class="btn sm ghost" data-scroll="wangpSec">장면 바꾸기</button></div>`;
+    }
+
+    const arts = (step.status === "done" ? (step.artifacts||[]) : []).map((a,i)=>artifactHtml(step,a,i)).join("");
+    const log = (step.log||[]).join("\n");
+    return `<div class="card ${cls}" id="card-${step.id}">
+      <div class="step-head">
+        <div class="num">${step.num}</div>
+        <div style="flex:1">
+          <div class="step-title">${esc(step.name)} ${opt}</div>
+          <div class="step-desc">${esc(step.desc)}</div>
+        </div>
+        ${badge}
+      </div>
+      ${note}
+      <div class="actions">${actions}</div>
+      ${arts?`<div class="artifacts">${arts}</div>`:""}
+      ${log?`<details class="log" data-id="${step.id}" ${open.includes(step.id)||cls==="failed"?"open":""}>
+        <summary>로그 보기 (${(step.log||[]).length}줄)</summary><pre class="log">${esc(log)}</pre></details>`:""}
+    </div>`;
+  }).join("");
+
+  wrap.querySelectorAll("[data-run]").forEach(b=>b.onclick = ()=> runStep(b.dataset.run));
+  wrap.querySelectorAll("[data-regen]").forEach(b=>b.onclick = ()=> regenScene(parseInt(b.dataset.regen,10), b));
+  wrap.querySelectorAll("[data-reset]").forEach(b=>b.onclick = ()=> resetStep(b.dataset.reset));
+  wrap.querySelectorAll("[data-stop]").forEach(b=>b.onclick = ()=> stopStep(b.dataset.stop));
+  wrap.querySelectorAll("[data-scroll]").forEach(b=>b.onclick = ()=> document.getElementById(b.dataset.scroll)?.scrollIntoView({behavior:"smooth"}));
+}
+
+/* ---------------- 트렌드 패널 ---------------- */
+function renderTrends(){
+  const tr = STATE.trends;
+  if(!tr){ $("#trendSec").innerHTML = ""; return; }
+  const sel = tr.selected||{};
+  const tools = (tr.tools||[]).map(t=>`<tr><td>${esc(t.name)}</td><td>${t.status==="ok"?'<span class="chip ok">정상</span>':'<span class="chip bad">실패</span>'}</td>
+      <td class="num-right">${fmt(t.count)}</td><td class="muted">${esc((t.error||"").slice(0,140))}</td></tr>`).join("");
+  const rows = (tr.candidates||[]).slice(0,15).map(c=>`<tr class="${c.selected?"sel":""}">
+      <td class="num-right">${c.rank}${c.selected?" ★":""}</td>
+      <td>${esc(c.source)}</td>
+      <td><a href="${esc(c.url)}" target="_blank" rel="noreferrer">${esc(c.title)}</a></td>
+      <td class="num-right">${fmt(c.metric)}</td>
+      <td class="num-right">${esc(c.score)}</td>
+      <td class="muted">${(c.fit||[]).map(k=>`<span class="chip">${esc(k)}</span>`).join("")||"-"}</td>
+      <td class="muted">${esc(c.published||"")}</td>
+      <td><button class="btn sm ghost" data-pick="${esc(c.id)}">선택</button></td></tr>`).join("");
+  const excl = (tr.excluded_sample||[]).map(e=>`<li>${esc(e.title)} — ${esc(e.reason)}</li>`).join("");
+
+  $("#trendSec").innerHTML = `
+  <h2 class="sec">🔎 트렌드 수집 결과 <small>도구·쿼리·후보·점수·선택 이유 · 사람 확인 필수</small></h2>
+  <div class="card">
+    <div class="kv">
+      <span>수집 ${esc(tr.collected_at)}</span><span>소요 ${esc(tr.duration_sec)}초</span>
+      <span>후보 ${fmt(tr.candidate_count)}개</span><span>제외 ${fmt(tr.excluded_count)}개</span>
+      <span>선택 방식: ${esc(tr.selection_mode)}</span>
+      <span>풀: ${esc((tr.selection_pool||{}).label||"-")} (${fmt((tr.selection_pool||{}).size)}개)</span>
+    </div>
+    <div class="ref">검색 쿼리: ${(tr.queries||[]).map(q=>`<span class="chip">${esc(q)}</span>`).join("")||"-"}</div>
+    <div class="ref" style="margin-top:10px"><b>선택:</b> <a href="${esc(sel.url)}" target="_blank" rel="noreferrer">${esc(sel.title)}</a>
+      · 점수 <b>${esc(sel.score)}</b></div>
+    <div class="ref">${esc(sel.reason||"")}</div>
+    ${sel.content_excerpt?`<details class="log"><summary>핫한 영상 내용 발췌 보기</summary><pre class="log">${esc(sel.content_excerpt)}</pre></details>`:""}
+
+    <div class="note" style="background:${tr.confirmed?'#eefaf2':'#fdf6e3'};color:${tr.confirmed?'#166534':'#7a5c00'};border-color:${tr.confirmed?'#c8e6d3':'#f0e6c8'};margin-top:12px">
+      <b>${tr.confirmed?'✅ 확정됨':'⏸ 아직 확정 안 됨'}</b> —
+      ${tr.confirmed?'이 후보로 대본 이후 단계를 진행합니다.':'전체 자동이라도 대본으로 넘어가기 전에 여기서 멈춥니다. 후보를 고르고 확정하세요.'}
+      ${tr.confirmed_at?` · ${esc(tr.confirmed_at)}`:''}
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="muted" style="flex:1;min-width:260px">대본 키워드 (수정 가능)
+        <input id="trendKeyword" type="text" style="width:100%;margin-top:4px" value="${esc(tr.selected_keyword||sel.keyword||"")}"></label>
+      <button class="btn primary" id="trendConfirm">이 트렌드로 확정</button>
+      ${tr.confirmed?`<button class="btn ghost" id="trendUnconfirm">확정 취소</button>`:""}
+      <button class="btn ghost" id="trendModalOpen">전체 후보 ${fmt(tr.candidate_count)}개 보기</button>
+    </div>
+
+    <details class="log" style="margin-top:12px">
+      <summary>🔁 키워드를 바꿔서 다시 수집하기</summary>
+      <div class="row" style="margin-top:8px">
+        <label class="muted" style="flex:1;min-width:280px">검색 키워드 (쉼표로 구분)
+          <input id="trendKeywords" type="text" style="width:100%;margin-top:4px"
+            value="${esc((tr.search_keywords||tr.queries||[]).join(", "))}"></label>
+      </div>
+      <div class="row">
+        <label class="muted">최소 조회수 <input id="trendMinViews" type="number" min="0" step="500" value="${esc(tr.min_views||3000)}" style="width:100px"></label>
+        <label class="muted">최대 길이(초) <input id="trendMaxDur" type="number" min="5" max="900" value="${esc(tr.max_duration_sec||180)}" style="width:90px"></label>
+        <button class="btn ghost" id="trendRefetch">저장 후 다시 수집</button>
+        <span class="muted">수집에는 1~2분 걸릴 수 있습니다. 다시 수집하면 확정은 자동 해제됩니다.</span>
+      </div>
+    </details>
+
+    <h2 class="sec" style="font-size:13px;margin:16px 0 8px">사용한 도구</h2>
+    <table><thead><tr><th>도구</th><th>상태</th><th class="num-right">수집</th><th>비고</th></tr></thead><tbody>${tools||'<tr><td colspan="4" class="empty">기록 없음</td></tr>'}</tbody></table>
+
+    <h2 class="sec" style="font-size:13px;margin:16px 0 8px">후보 상위 15개 <small>★ = 선택됨 · '선택'을 누르면 확정됩니다</small></h2>
+    <div class="scroll"><table><thead><tr><th class="num-right">#</th><th>출처</th><th>제목</th><th class="num-right">조회/스타</th>
+      <th class="num-right">점수</th><th>채널 적합</th><th>게시</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="8" class="empty">후보 없음</td></tr>'}</tbody></table></div>
+
+    ${excl?`<details class="log"><summary>필터에서 제외된 후보 ${fmt(tr.excluded_count)}개 중 일부</summary><ul class="ref">${excl}</ul></details>`:""}
+    <div class="ref" style="margin-top:10px">전체 데이터: <code>output/trends.json</code> · 사람이 읽는 리포트: <code>output/trends_report.md</code></div>
+  </div>`;
+
+  document.querySelectorAll("[data-pick]").forEach(b=>b.onclick = ()=> pickTrend(b.dataset.pick));
+  const cbtn = $("#trendConfirm"); if(cbtn) cbtn.onclick = confirmTrend;
+  const ubtn = $("#trendUnconfirm"); if(ubtn) ubtn.onclick = unconfirmTrend;
+  const mbtn = $("#trendModalOpen"); if(mbtn) mbtn.onclick = openTrendModal;
+  const rbtn = $("#trendRefetch"); if(rbtn) rbtn.onclick = refetchTrends;
+}
+
+async function pickTrend(id){
+  try{
+    const d = await api("/api/trends/select", {id});
+    toast("후보 선택 + 확정: " + (d.selected?.title || ""));
+    const modal = $("#trendModal"); if(modal) modal.classList.remove("on");
+    await refresh();
+  }catch(e){ toast(e.message, true); }
+}
+
+async function confirmTrend(){
+  const keyword = ($("#trendKeyword")?.value || "").trim();
+  try{
+    await api("/api/trends/confirm", {confirmed:true, keyword});
+    toast("트렌드 확정 완료 · 이제 대본 단계를 실행하세요");
+    await refresh();
+  }catch(e){ toast(e.message, true); }
+}
+
+async function unconfirmTrend(){
+  try{
+    await api("/api/trends/confirm", {confirmed:false});
+    toast("트렌드 확정을 취소했습니다");
+    await refresh();
+  }catch(e){ toast(e.message, true); }
+}
+
+async function refetchTrends(){
+  const keywords = ($("#trendKeywords")?.value || "").trim();
+  if(!keywords) return toast("검색 키워드를 입력하세요.", true);
+  const body = {keywords,
+    min_views: parseInt($("#trendMinViews")?.value || "3000", 10),
+    max_duration_sec: parseInt($("#trendMaxDur")?.value || "180", 10)};
+  try{
+    await api("/api/trends/fetch", body);
+    toast("설정 저장 · 트렌드를 다시 수집합니다 (1~2분)");
+    await refresh();
+  }catch(e){ toast(e.message, true); }
+}
+
+function trendRowsHtml(list){
+  return list.map(c=>`<tr class="${c.selected?"sel":""}">
+    <td class="num-right">${c.rank}${c.selected?" ★":""}</td>
+    <td>${esc(c.source)}</td>
+    <td><a href="${esc(c.url)}" target="_blank" rel="noreferrer">${esc(c.title)}</a>
+      ${c.description?`<div class="sub muted" style="font-size:11.5px;margin-top:3px">${esc(c.description.slice(0,150))}</div>`:""}</td>
+    <td class="num-right">${fmt(c.metric)}</td>
+    <td class="num-right">${esc(c.score)}</td>
+    <td class="muted">${(c.fit||[]).map(k=>`<span class="chip">${esc(k)}</span>`).join("")||"-"}</td>
+    <td class="muted">${esc(c.published||"")}${c.duration_sec?`<div class="sub">${esc(c.duration_sec)}초</div>`:""}</td>
+    <td><button class="btn sm ${c.selected?"primary":"ghost"}" data-mpick="${esc(c.id)}">${c.selected?"확정됨":"선택"}</button></td></tr>`).join("");
+}
+
+function openTrendModal(){
+  const tr = STATE.trends; if(!tr) return;
+  const all = tr.candidates || [];
+  const modal = $("#trendModal");
+  modal.innerHTML = `
+    <div class="modal-box">
+      <div class="modal-head">
+        <b>전체 후보 ${fmt(all.length)}개</b>
+        <span class="muted">점수 순 · '선택'을 누르면 그 후보로 확정됩니다</span>
+        <span style="flex:1"></span>
+        <input id="tmFilter" type="text" placeholder="제목/출처 필터" style="width:220px">
+        <button class="btn ghost" id="tmClose">닫기</button>
+      </div>
+      <div class="modal-body"><table><thead><tr><th class="num-right">#</th><th>출처</th><th>제목</th>
+        <th class="num-right">조회/스타</th><th class="num-right">점수</th><th>채널 적합</th><th>게시</th><th></th></tr></thead>
+        <tbody id="tmBody">${trendRowsHtml(all)}</tbody></table></div>
+      <div class="ref">${tr.confirmed?"현재 확정됨 · 다른 후보를 고르면 교체됩니다.":"아직 확정 전입니다. 하나를 고르세요."}</div>
+    </div>`;
+  modal.classList.add("on");
+  const body = $("#tmBody");
+  $("#tmFilter").oninput = (e)=>{
+    const q = (e.target.value||"").toLowerCase();
+    const list = all.filter(c=> !q || (c.title+" "+c.source+" "+(c.author||"")).toLowerCase().includes(q));
+    body.innerHTML = trendRowsHtml(list) || `<tr><td colspan="8" class="empty">조건에 맞는 후보가 없습니다.</td></tr>`;
+  };
+  $("#tmClose").onclick = ()=> modal.classList.remove("on");
+  modal.onclick = (e)=>{
+    if(e.target === modal) modal.classList.remove("on");
+    const pick = e.target.closest("[data-mpick]");
+    if(pick) pickTrend(pick.dataset.mpick);
+  };
+  body.querySelectorAll("[data-mpick]").forEach(b=>b.onclick = (e)=>{ e.stopPropagation(); pickTrend(b.dataset.mpick); });
+}
+
+/* ---------------- 음성(TTS) 설정 ---------------- */
+let TTS_BUILT = false;
+/* ---------------- 대본 LLM 선택 ---------------- */
+let LLM = null, LLM_BUILT = false, LLM_MODELS = [];
+
+async function loadLlm(){
+  try{ LLM = await (await fetch("/api/llm")).json(); }catch(e){ return; }
+  renderLlm();
+}
+
+function renderLlm(){
+  if(!LLM) return;
+  const provs = LLM.providers || {};
+  const opts = [`<option value="auto">자동 (키 있는 API 순서대로: Freebuff → Gemini → Groq → OpenRouter)</option>`]
+    .concat(Object.entries(provs).map(([id,p])=>`<option value="${esc(id)}">${esc(p.label)}${p.has_key?"":" (키 없음)"}</option>`))
+    .join("");
+
+  if(!LLM_BUILT){
+    $("#llmSec").innerHTML = `
+    <h2 class="sec">🧠 대본 LLM <small>3단계 대본을 어느 모델로 만들지 · Ollama 는 기본 꺼짐</small></h2>
+    <div class="card">
+      <div class="kv" id="llmChips"></div>
+      <div class="row">
+        <label class="muted" style="flex:1;min-width:300px">프로바이더
+          <select id="llmProvider" style="display:block;width:100%;margin-top:4px">${opts}</select></label>
+        <label class="muted" style="flex:1;min-width:260px">모델
+          <input id="llmModel" type="text" list="llmModelList" placeholder="예: gemini-3.5-flash" style="display:block;width:100%;margin-top:4px">
+          <datalist id="llmModelList"></datalist></label>
+      </div>
+      <div class="row">
+        <button class="btn ghost" id="llmModels">모델 목록 불러오기</button>
+        <button class="btn ghost" id="llmTest">연결 테스트</button>
+        <button class="btn primary" id="llmSave">저장 (3단계 초기화)</button>
+        <label class="muted" style="display:flex;align-items:center;gap:6px">
+          <input type="checkbox" id="llmOllama"> Ollama 사용 (로컬 GPU/RAM 사용)</label>
+        <span class="muted" id="llmMsg"></span>
+      </div>
+      <div class="ref" id="llmInfo"></div>
+    </div>`;
+    LLM_BUILT = true;
+    $("#llmSave").onclick = saveLlm;
+    $("#llmTest").onclick = testLlm;
+    $("#llmModels").onclick = loadLlmModels;
+    $("#llmProvider").onchange = ()=>{
+      const id = $("#llmProvider").value;
+      $("#llmModel").value = (id==="auto") ? "" : ((provs[id]||{}).model || "");
+      $("#llmModel").disabled = (id==="auto");
+    };
+  }
+
+  setIfIdle("#llmProvider", LLM.provider || "auto");
+  const cur = LLM.provider === "auto" ? "auto" : (LLM.provider || "auto");
+  if(document.activeElement !== $("#llmModel")){
+    $("#llmModel").value = cur==="auto" ? "" : ((provs[cur]||{}).model || "");
+  }
+  $("#llmModel").disabled = (cur === "auto");
+  $("#llmOllama").checked = !!LLM.ollama_enabled;
+
+  $("#llmChips").innerHTML = Object.entries(provs).map(([id,p])=>
+    `<span class="chip ${p.has_key?"ok":"bad"}" title="${esc(p.base_url||"")}">${esc(p.label)}: ${p.has_key?"키 OK":"키 없음"}</span>`
+  ).join("") + (LLM.ollama_enabled ? `<span class="chip bad">Ollama ON (RAM 사용)</span>` : `<span class="chip">Ollama OFF</span>`);
+
+  $("#llmInfo").innerHTML = `키는 <code>.env</code> → <code>${esc(LLM.external_keys_file||"(외부 파일 없음)")}</code> 순서로 찾습니다. `
+    + `현재: <b>${esc(LLM.provider)}</b>${cur!=="auto"?` · 모델 <b>${esc((provs[cur]||{}).model||"")}</b>`:""}`;
+}
+
+async function saveLlm(){
+  const id = $("#llmProvider").value;
+  const body = {provider:id, model:$("#llmModel").value.trim(), ollama_enabled:$("#llmOllama").checked};
+  try{
+    const d = await api("/api/llm/config", body);
+    LLM = d.settings; LLM_BUILT = false; renderLlm();
+    toast(`대본 LLM 저장 · ${LLM.provider}${id!=="auto"?" / "+body.model:""}`);
+    await refresh();
+  }catch(e){ toast(e.message, true); }
+}
+
+async function testLlm(){
+  const id = $("#llmProvider").value;
+  if(id === "auto") return toast("프로바이더를 하나 고른 뒤 테스트하세요.", true);
+  $("#llmMsg").textContent = "연결 확인 중…";
+  try{
+    const d = await api("/api/llm/test", {provider:id, model:$("#llmModel").value.trim()});
+    $("#llmMsg").textContent = `${id} · ${d.result.model} · ${d.result.elapsed_sec}초`;
+    $("#llmInfo").innerHTML = `테스트 응답: “${esc(d.result.text)}”`;
+    toast("LLM 연결 성공 · " + id);
+  }catch(e){ $("#llmMsg").textContent = "실패"; toast(e.message, true); }
+}
+
+async function loadLlmModels(){
+  const id = $("#llmProvider").value;
+  if(id === "auto") return toast("프로바이더를 고르세요.", true);
+  $("#llmMsg").textContent = "모델 목록 불러오는 중…";
+  try{
+    const d = await api("/api/llm/models", {provider:id});
+    LLM_MODELS = d.models || [];
+    $("#llmModelList").innerHTML = LLM_MODELS.map(m=>`<option value="${esc(m)}"></option>`).join("");
+    $("#llmMsg").textContent = `${LLM_MODELS.length}개 모델`;
+    if(!$("#llmModel").value && LLM_MODELS.length) $("#llmModel").value = LLM_MODELS[0];
+  }catch(e){ $("#llmMsg").textContent = ""; toast(e.message, true); }
+}
+
+function renderTts(){
+  const t = STATE.tts;
+  if(!t) return;
+  if(!TTS_BUILT){
+    $("#ttsSec").innerHTML = `
+    <h2 class="sec">🗣 음성 설정 <small>4단계에서 쓸 목소리 · ElevenLabs / edge-tts</small></h2>
+    <div class="card">
+      <div class="kv" id="ttsKey"></div>
+      <div class="row">
+        <label class="muted">TTS 엔진
+          <select id="ttsProvider" style="display:block;margin-top:4px;min-width:240px">
+            <option value="auto">자동 (ElevenLabs 키 있으면 우선, 실패 시 edge)</option>
+            <option value="elevenlabs">ElevenLabs 전용</option>
+            <option value="edge">edge-tts (무료 · 구글 계열 음성)</option>
+          </select></label>
+        <label class="muted">ElevenLabs 모델
+          <select id="ttsModel" style="display:block;margin-top:4px;min-width:220px"></select></label>
+      </div>
+      <div class="row">
+        <label class="muted" style="flex:1;min-width:280px">ElevenLabs 음성
+          <select id="ttsVoice" style="display:block;width:100%;margin-top:4px"></select></label>
+        <button class="btn ghost" id="ttsRefresh">음성 목록 새로고침 (API)</button>
+        <button class="btn ghost" id="ttsReload">키 다시 확인</button>
+      </div>
+      <div class="row">
+        <label class="muted" style="flex:1;min-width:280px">voice_id 직접 입력 (대시보드에서 복사)
+          <input id="ttsVoiceId" type="text" placeholder="예: 21m00Tcm4TlvDq8ikWAM" style="display:block;width:100%;margin-top:4px"></label>
+      </div>
+      <div class="row">
+        <label class="muted">edge-tts 음성
+          <select id="ttsEdge" style="display:block;margin-top:4px;min-width:230px"></select></label>
+        <label class="muted" title="ElevenLabs 는 -30%~+20% (0.7~1.2배) 지원. +10% = 1.1배 빠르게">말하기 속도
+          <input id="ttsRate" type="text" placeholder="+10%" style="width:90px;display:block;margin-top:4px"></label>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="ttsSave">음성 설정 저장 (4단계 초기화)</button>
+        <button class="btn ghost" id="ttsTest">샘플 들어보기</button>
+        <span class="muted" id="ttsMsg"></span>
+      </div>
+      <audio id="ttsAudio" controls preload="none" style="width:100%;margin-top:10px;display:none"></audio>
+      <div class="ref" id="ttsSampleInfo"></div>
+      <div class="ref">ElevenLabs 음성은 <b>계정에 있는 voice_id</b> 만 쓸 수 있습니다. 키를 바꿨다면 서버를 끄지 않아도
+        <b>키 다시 확인</b> 또는 '음성 목록 새로고침'을 누르면 바로 반영됩니다(자동으로 .env 를 다시 읽음).
+        한국어는 <code>eleven_multilingual_v2</code> + 밝은 음성(Sarah · Laura · Jessica · Bella 등)을 권장합니다.
+        계정에 한국어 전용 음성이 없으면 영어 음성이 한국어를 억양 있게 읽습니다.</div>
+    </div>`;
+    TTS_BUILT = true;
+    $("#ttsSave").onclick = saveTts;
+    $("#ttsTest").onclick = testTts;
+    $("#ttsRefresh").onclick = refreshTtsVoices;
+    $("#ttsReload").onclick = reloadTtsKey;
+  }
+
+  const modelSel = $("#ttsModel");
+  if(modelSel && modelSel.options.length === 0){
+    modelSel.innerHTML = (t.models || []).map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join("");
+  }
+  const voiceSel = $("#ttsVoice");
+  const vkey = (t.voices||[]).map(v=>v.voice_id+":"+v.name).join(",") + "|" + (t.voice_id||"");
+  if(voiceSel && sig("ttsvoices", vkey)){
+    const gLabel = g => ({male:"남성", female:"여성", neutral:"중성"}[String(g||"").toLowerCase()] || "");
+    voiceSel.innerHTML = (t.voices||[]).map(v=>{
+      const g = gLabel(v.gender);
+      return `<option value="${esc(v.voice_id)}">${esc(v.name||v.voice_id)}${g?" · "+g:""}${v.category?" · "+esc(v.category):""}${v.language?" · "+esc(v.language):""}</option>`;
+    }).join("");
+    if(t.voice_id && !Array.from(voiceSel.options).some(o=>o.value===t.voice_id)){
+      voiceSel.insertAdjacentHTML("afterbegin", `<option value="${esc(t.voice_id)}">직접 지정 (${esc(t.voice_id)})</option>`);
+    }
+    if(t.voice_id) voiceSel.value = t.voice_id;
+  }
+  const edgeSel = $("#ttsEdge");
+  if(edgeSel && edgeSel.options.length === 0){
+    edgeSel.innerHTML = (t.edge_voices||[]).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");
+  }
+  setIfIdle("#ttsProvider", t.provider || "auto");
+  setIfIdle("#ttsModel", t.model_id || "eleven_multilingual_v2");
+  setIfIdle("#ttsEdge", t.edge_voice || "ko-KR-SunHiNeural");
+  const ratePct = (typeof t.rate_percent === "number") ? t.rate_percent : 0;
+  setIfIdle("#ttsRate", `${ratePct > 0 ? "+" : ""}${ratePct}%`);
+
+  const key = t.key || {};
+  const elLabel = key.state === "valid" ? "키 OK" : key.state === "invalid" ? "키 무효(401)"
+    : key.state === "placeholder" ? "플레이스홀더" : "키 없음";
+  $("#ttsKey").innerHTML = [
+    `<span class="chip ${key.verified?"ok":"bad"}">ElevenLabs ${elLabel}</span>`,
+    `<span class="chip">엔진 ${esc(t.provider)}</span>`,
+    `<span class="chip">현재 음성 ${esc(t.voice_id || "-")}</span>`,
+    `<span class="chip">모델 ${esc(t.model_id)}</span>`,
+    `<span class="chip" title="화면이 낡았는지 확인용">음성UI v2</span>`,
+    `<span class="muted">${esc(key.detail||"")}</span>`,
+  ].join("");
+
+  const sm = t.sample;
+  const vname = id => ((t.voices||[]).find(v=>v.voice_id===id)?.name) || id || "";
+  const spd = (typeof sm?.rate_percent === "number")
+    ? ` · 속도 ${sm.rate_percent>0?"+":""}${sm.rate_percent}%${typeof sm.speed === "number"?` (${sm.speed}배)`:''}`
+    : "";
+  $("#ttsSampleInfo").innerHTML = sm
+    ? `마지막 샘플: <b>${esc(sm.provider)}</b> · 음성 <b>${esc(vname(sm.voice_id))}</b> <code>${esc(sm.voice_id||"")}</code>${esc(spd)} · ${esc(sm.duration_sec)}초 · ${esc(sm.created_at||"")}${sm.fallback?' <span class="chip bad">폴백 사용</span>':''}`
+    : "샘플을 만들어 실제 목소리를 확인하세요. (3초 남짓, ElevenLabs 글자 수 거의 안 씀)";
+}
+
+async function saveTts(){
+  const direct = ($("#ttsVoiceId")?.value || "").trim();
+  const body = {
+    provider: $("#ttsProvider").value,
+    voice_id: direct || $("#ttsVoice").value,
+    model_id: $("#ttsModel").value,
+    edge_voice: $("#ttsEdge").value,
+    rate_percent: parseRate($("#ttsRate").value),
+  };
+  try{
+    const d = await api("/api/tts/config", body);
+    $("#ttsVoiceId").value = "";
+    toast(`음성 설정 저장 · ${d.settings.provider} / ${d.settings.voice_id || d.settings.edge_voice}`);
+    await refresh();
+  }catch(e){ toast(e.message, true); }
+}
+
+async function testTts(){
+  $("#ttsMsg").textContent = "샘플 생성 중…";
+  try{
+    // 드롭다운 선택을 저장하지 않아도 그 목소리로 샘플을 만든다
+    const direct = ($("#ttsVoiceId")?.value || "").trim();
+    const body = {
+      provider: $("#ttsProvider").value,
+      voice_id: direct || $("#ttsVoice").value,
+      model_id: $("#ttsModel").value,
+      rate_percent: parseRate($("#ttsRate").value),
+    };
+    const d = await api("/api/tts/sample", body);
+    const a = $("#ttsAudio");
+    a.src = "/api/tts/sample?t=" + Date.now();
+    a.style.display = "block";
+    a.play().catch(()=>{});
+    const vn = (((STATE.tts || {}).voices) || []).find(v=>v.voice_id===d.meta.voice_id)?.name;
+    $("#ttsMsg").textContent = `${d.meta.provider} · ${vn || d.meta.voice_id || ""} · ${d.meta.duration_sec}초`;
+    if(body.voice_id && d.meta.voice_id && body.voice_id !== d.meta.voice_id){
+      // 페이지가 낡은 상태(예전 JS)면 선택한 음성이 서버로 안 간다 → 바로 알려준다
+      $("#ttsMsg").textContent += " · ⚠️ 선택한 음성과 다름";
+      toast(`요청한 음성(${body.voice_id.slice(0,8)}…)과 실제(${d.meta.voice_id.slice(0,8)}…)이 다릅니다. Ctrl+F5 로 새로고침하세요.`, true);
+    }else{
+      toast("샘플 음성: " + d.meta.provider + " · " + (vn || d.meta.voice_id || "") + (d.meta.fallback ? " (폴백!)" : ""));
+    }
+    await refresh();
+  }catch(e){ $("#ttsMsg").textContent = ""; toast(e.message, true); }
+}
+
+async function reloadTtsKey(){
+  $("#ttsMsg").textContent = "키 확인 중…";
+  try{
+    const d = await api("/api/tts/reload", {});
+    $("#ttsMsg").textContent = d.key.detail || d.key.state;
+    toast(`ElevenLabs 키: ${d.key.state}${d.key.detail ? " · " + d.key.detail : ""}`, d.key.state !== "valid");
+    await refresh();
+  }catch(e){ $("#ttsMsg").textContent = ""; toast(e.message, true); }
+}
+
+async function refreshTtsVoices(){
+  $("#ttsMsg").textContent = "음성 목록 불러오는 중…";
+  try{
+    const d = await api("/api/tts/voices", {});
+    $("#ttsMsg").textContent = `음성 ${d.count}개를 불러왔습니다`;
+    toast(`ElevenLabs 음성 ${d.count}개 갱신`);
+    await refresh();
+  }catch(e){ $("#ttsMsg").textContent = ""; toast(e.message, true); }
+}
+
+/* ---------------- B-Roll 설정 ---------------- */
+let BROLL_BUILT = false, WANGP_BUILT = false, WANGP_PREFILL = false, FIT_DIRTY = false;
+function setIfIdle(sel, val){ const el = $(sel); if(el && document.activeElement !== el) el.value = val; }
+
+// '+10%' / '1.1' / 10 → 10 (%)
+function parseRate(v){
+  const s = String(v == null ? "" : v).trim().replace(/\s+/g, "");
+  if(!s) return 0;
+  let pct;
+  if(s.endsWith("%")) pct = Math.round(parseFloat(s.slice(0, -1)));
+  else {
+    const n = parseFloat(s);
+    if(Number.isNaN(n)) return 0;
+    pct = (n >= 0.5 && n <= 1.5) ? Math.round((n - 1) * 100) : Math.round(n);
+  }
+  if(Number.isNaN(pct)) return 0;
+  return Math.max(-30, Math.min(20, pct));
+}
+
+function renderBroll(){
+  const cur = (STATE.broll || {}).source || {};
+  const meta = (STATE.broll || {}).meta || {};
+  if(!BROLL_BUILT){
+    $("#brollSec").innerHTML = `
+    <h2 class="sec">🎥 B-Roll 소스 <small>6단계: 전체 화면 / 특정 창 / 업로드한 MP4</small></h2>
+    <div class="card">
+      <div class="row">
+        <label><input type="radio" name="bmode" value="none"> <b>사용 안 함</b></label>
+        <label><input type="radio" name="bmode" value="desktop"> 전체 화면</label>
+        <label><input type="radio" name="bmode" value="window"> 창 선택</label>
+        <label><input type="radio" name="bmode" value="file"> MP4 사용</label>
+        <span class="spacer"></span>
+        <label class="muted">녹화 초 <input id="bdur" type="number" min="1" max="120" value="5"
+          style="width:68px;padding:4px 6px;border:1px solid var(--line);border-radius:6px"></label>
+      </div>
+      <div class="row">
+        <select id="bwin" style="flex:1;min-width:260px;padding:7px;border-radius:8px;border:1px solid var(--line);background:#fff"></select>
+        <button class="btn ghost" id="bwin-refresh">창 목록 새로고침</button>
+      </div>
+      <div class="row">
+        <input type="file" id="bfile" accept=".mp4,.mov,.webm,.mkv">
+        <button class="btn ghost" id="bupload">업로드</button>
+        <span class="muted" id="bmsg"></span>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="bsave">설정 저장 (6단계 초기화)</button>
+        <span class="muted">창 녹화는 대상 창이 화면에 보이는 상태여야 합니다.</span>
+      </div>
+      <div class="row" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)">
+        <label><input type="checkbox" id="bper"> <b>장면마다 다른 B-Roll</b></label>
+        <span class="muted">체크하면 10단계가 장면별 선택(<b>🖼 장면</b> 패널)을 씁니다. 끄면 전체에 같은 B-Roll.<br>
+          CapCut 초안(9단계)도 <b>같은 장면 프레임</b>으로 만들어지므로 두 결과의 B-Roll 배치가 같습니다.</span>
+      </div>
+      <div class="row" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)">
+        <label class="muted">장면 화면 맞춤
+          <select id="bfit" style="padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:#fff">
+            <option value="cover_top">꽉 채우기 · 위쪽(머리) 기준</option>
+            <option value="cover_center">꽉 채우기 · 가운데 기준</option>
+            <option value="contain">전체 보이기 · 블러 여백</option>
+          </select></label>
+        <label class="muted">B-Roll 칸 높이
+          <select id="bratio" style="padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:#fff">
+            <option value="0.3">30%</option>
+            <option value="0.4">40%</option>
+            <option value="0.5">50%</option>
+            <option value="0.6">60%</option>
+          </select></label>
+        <button class="btn ghost" id="bfit-save">화면 배치 저장</button>
+        <button class="btn primary" id="bfit-sample">샘플 보기</button>
+        <span class="muted" id="bfitMsg"></span>
+      </div>
+      <div class="ref" id="bfitRef"></div>
+      <div id="bsampleBox" style="display:none;margin-top:10px">
+        <img id="bsampleImg" alt="배치 샘플" style="width:260px;border-radius:10px;border:1px solid var(--line);display:block">
+        <div class="muted" id="bsampleCap" style="margin-top:6px"></div>
+      </div>
+      <div class="row">
+        <span class="muted" id="bclipsInfo"></span>
+        <span class="spacer"></span>
+        <button class="btn sm ghost" id="brec">선택한 창을 클립으로 녹화</button>
+        <span class="muted" id="brecMsg"></span>
+      </div>
+      <div class="ref"><b>사용 안 함</b>을 고르면 6단계를 건너뛰고, 10단계는 <b>장면 이미지/영상 전체 화면</b>(9:16)으로 만듭니다.
+        이때 화면 안내는 아래 <b>🖼 장면 · 말풍선</b>의 문구가 담당합니다(사이트 주소 등).</div>
+      <div class="ref" id="bcur"></div>
+    </div>`;
+    BROLL_BUILT = true;
+    $("#bwin-refresh").onclick = loadWindows;
+    $("#bupload").onclick = uploadBroll;
+    $("#bsave").onclick = saveBroll;
+    $("#bper").onchange = togglePerSceneBroll;
+    $("#bfit-save").onclick = saveBrollLayout;
+    $("#bfit-sample").onclick = previewLayout;
+    const markDirty = () => { FIT_DIRTY = true; const m = $("#bfitMsg"); if(m) m.textContent = "저장 전 — 샘플로 확인하고 '화면 배치 저장'을 누르세요"; };
+    $("#bfit").onchange = markDirty;
+    $("#bratio").onchange = markDirty;
+    $("#brec").onclick = recordBrollClip;
+    loadWindows();
+  }
+
+  const asmNow = STATE.assembly || {};
+  setCheck("#bper", !!asmNow.per_scene_broll);
+
+  // 장면 화면 맞춤 / B-Roll 칸 높이 (10단계 MP4 · 9단계 CapCut 초안 공통)
+  const fitVal = asmNow.scene_fit === "contain" ? "contain"
+    : `cover_${asmNow.scene_anchor === "center" ? "center" : "top"}`;
+  const ratioVal = Number(asmNow.top_ratio ?? 0.5);
+  if(!FIT_DIRTY){   // 사용자가 방금 고른 값을 2초 폴링이 되돌리지 않게
+    setIfIdle("#bfit", fitVal);
+    setIfIdle("#bratio", String([0.3, 0.4, 0.5, 0.6].reduce((a, b) => Math.abs(b - ratioVal) < Math.abs(a - ratioVal) ? b : a, 0.5)));
+  }
+  if($("#bfitRef")){
+    const topPx = Math.round(1920 * ratioVal), botPx = 1920 - topPx;
+    $("#bfitRef").innerHTML = `지금 배치: 위 <b>B-Roll ${topPx}px</b> / 아래 <b>장면 ${botPx}px</b> · 맞춤 <b>${
+      asmNow.scene_fit === "contain" ? "전체 보이기(블러 여백)" : `꽉 채우기(${asmNow.scene_anchor === "center" ? "가운데" : "머리"} 기준)`}</b>`
+      + `<br>화면 비율(9:16)과 그림 비율이 다르면 원래는 가운데가 잘려 <b>머리가 잘리는 장면</b>이 생겼습니다. `
+      + `지금은 장면마다 같은 규칙으로 맞춥니다 — <b>위쪽(머리) 기준</b>은 아래(다리)만 잘리고, <b>전체 보이기</b>는 좌우 여백을 흐린 배경으로 채웁니다.`;
+  }
+  const clips = (STATE.broll || {}).clips || [];
+  if($("#bclipsInfo")){
+    $("#bclipsInfo").innerHTML = clips.length
+      ? `클립 라이브러리 <b>${clips.length}개</b> · 최근: ${esc((clips[0].label || clips[0].name).slice(0,48))}`
+      : "클립 라이브러리가 비었습니다. 창을 녹화하거나 MP4를 업로드하세요.";
+  }
+  if(sig("brollsrc", cur)){
+    document.querySelectorAll("input[name=bmode]").forEach(r=>{ r.checked = r.value === (cur.mode || "desktop"); });
+    setIfIdle("#bdur", cur.duration_sec || 5);
+  }
+  const src = cur.source ? `<br>MP4: <code>${esc(cur.source)}</code>` : "";
+  const mt = meta.output
+    ? `<br>마지막 B-Roll: <code>${esc(meta.output)}</code>${meta.mode ? ` · ${esc(meta.mode)}` : ""}${meta.duration_sec ? ` · ${esc(meta.duration_sec)}초` : ""}`
+    : "<br>아직 만든 B-Roll 이 없습니다.";
+  $("#bcur").innerHTML = `현재 모드: <b>${esc(cur.mode === "none" ? "사용 안 함 (장면 전체 화면)" : (cur.mode || "desktop"))}</b>`
+    + ` · 적용: <b>${(STATE.assembly || {}).per_scene_broll ? "장면마다" : "전체 동일"}</b>`
+    + (cur.window_title ? ` · 창 <b>${esc(cur.window_title)}</b>` : "")
+    + (cur.duration_sec ? ` · ${esc(cur.duration_sec)}초` : "") + src + mt;
+}
+
+function setCheck(sel, on){
+  const el = $(sel);
+  if(el && document.activeElement !== el) el.checked = !!on;
+}
+
+async function togglePerSceneBroll(){
+  const on = !!$("#bper").checked;
+  try{
+    const d = await api("/api/scenes/broll-mode", {per_scene: on});
+    toast(on ? "장면마다 B-Roll · 🖼 장면 패널에서 장면별로 고르세요" : "전체에 같은 B-Roll");
+    await refresh();
+  }catch(e){ toast(e.message, true); }
+}
+
+async function previewLayout(){
+  const fit = $("#bfit")?.value || "cover_top";
+  const ratio = parseFloat($("#bratio")?.value || "0.5");
+  const msg = $("#bfitMsg");
+  if(msg) msg.textContent = "샘플 만드는 중…";
+  try{
+    const d = await api("/api/layout/preview", {scene_fit: fit, top_ratio: ratio});
+    const box = $("#bsampleBox"), img = $("#bsampleImg");
+    if(img) img.src = d.url;
+    if(box) box.style.display = "block";
+    const cap = $("#bsampleCap");
+    if(cap) cap.textContent = `${d.index}번 장면 샘플 · 상단 B-Roll ${d.top_h}px / 하단 장면 ${d.bottom_h}px · ${d.fit_text}`
+      + (d.broll ? ` · B-Roll: ${d.broll}` : " · B-Roll 없음(전체 화면)")
+      + (d.bubble ? " · 말풍선 포함" : "");
+    if(msg) msg.textContent = (fit === (STATE.assembly?.scene_fit === "contain" ? "contain" : `cover_${STATE.assembly?.scene_anchor === "center" ? "center" : "top"}`))
+      ? "저장된 설정으로 만든 샘플입니다" : "저장 전 미리보기 — 저장을 눌러야 9·10단계에 적용됩니다";
+  }catch(e){ if(msg) msg.textContent = ""; toast(e.message, true); }
+}
+
+async function saveBrollLayout(){
+  const fit = $("#bfit")?.value || "cover_top";
+  const ratio = parseFloat($("#bratio")?.value || "0.5");
+  const msg = $("#bfitMsg");
+  if(msg) msg.textContent = "저장 중…";
+  try{
+    await api("/api/assembly", {scene_fit: fit, top_ratio: ratio});
+    FIT_DIRTY = false;
+    if(msg) msg.textContent = "";
+    toast("화면 배치 저장 · 10단계 MP4 와 9단계 CapCut 초안이 이 배치를 같이 씁니다");
+    await refresh();
+  }catch(e){ if(msg) msg.textContent = ""; toast(e.message, true); }
+}
+
+async function recordBrollClip(){
+  const sel = $("#bwin");
+  const title = sel?.value || "";
+  if(!title) return toast("먼저 녹화할 창을 선택하세요.", true);
+  const opt = sel.selectedOptions && sel.selectedOptions[0];
+  const secs = Math.max(1, Math.min(30, parseInt($("#bdur")?.value || "5", 10) || 5));
+  const msg = $("#brecMsg");
+  if(msg) msg.textContent = "녹화 중… (창을 가리지 마세요)";
+  try{
+    const d = await api("/api/broll/clip/record",
+      {window_title: title, process: opt?.dataset.process || "", duration_sec: secs});
+    if(msg) msg.textContent = "";
+    toast(`클립 저장: ${d.clip?.label || d.clip?.name || "완료"} (${secs}초)`);
+    await refresh();
+  }catch(e){ if(msg) msg.textContent = ""; toast(e.message, true); }
+}
+
+async function loadWindows(){
+  const sel = $("#bwin"); if(!sel) return;
+  sel.innerHTML = `<option value="">(창 목록 불러오는 중…)</option>`;
+  try{
+    const r = await fetch("/api/broll/windows");
+    const d = await r.json();
+    const cur = (STATE.broll?.source?.window_title) || "";
+    const opts = (d.windows || []).map(w=>`<option value="${esc(w.title)}" data-process="${esc(w.process)}">${esc(w.process)} · ${esc(w.title)}</option>`).join("");
+    sel.innerHTML = `<option value="">— 녹화할 창 선택 —</option>` + opts;
+    if(cur) sel.value = cur;
+    if(!(d.windows || []).length) toast("창 목록이 비었습니다. (권한/세션 확인)", true);
+  }catch(e){ sel.innerHTML = `<option value="">(창 목록 실패)</option>`; }
+}
+
+async function saveBroll(){
+  const mode = document.querySelector("input[name=bmode]:checked")?.value || "desktop";
+  const sel = $("#bwin");
+  const opt = sel && sel.selectedOptions && sel.selectedOptions[0];
+  const body = {mode, window_title: sel?.value || "",
+    process: (opt && opt.dataset && opt.dataset.process) || "",
+    duration_sec: parseInt($("#bdur").value || "5", 10)};
+  try{
+    const d = await api("/api/broll/config", body);
+    toast(mode === "none"
+      ? "B-Roll 사용 안 함 · 10단계는 장면 전체 화면으로 만듭니다"
+      : "B-Roll 설정 저장: " + mode);
+    if(d.assembly && d.assembly.layout && mode === "none") STATE.assembly = d.assembly;
+    await refresh();
+  }catch(e){ toast(e.message, true); }
+}
+
+/* ---------------- 장면 · 말풍선 ---------------- */
+function renderScenes(){
+  const sc = STATE.scenes || {};
+  const items = sc.items || [];
+  const host = $("#scenesSec");
+  if(!host) return;
+  if(!items.length){ host.innerHTML = ""; return; }
+
+  const act = document.activeElement;
+  if(act && act.tagName === "INPUT" && host.contains(act)) return;   // 입력 중에는 다시 그리지 않음
+
+  const asm = STATE.assembly || {};
+  const perScene = !!asm.per_scene_broll;
+  const brollOn = ((STATE.broll || {}).enabled !== false) && (asm.layout !== "scenes" || perScene);
+  const clips = (STATE.broll || {}).clips || [];
+  const view = {items, layout: asm.layout, broll: brollOn, perScene,
+    clips: clips.map(c=>c.path + "|" + (c.label || c.name))};
+  if(!sig("scenes", view)) return;
+
+  host.innerHTML = `
+  <h2 class="sec">🖼 장면 · 말풍선 <small>문구를 넣으면 그 장면에 말풍선이 그려지고, 비우면 사라집니다</small></h2>
+  <div class="card">
+    <div class="kv">
+      <span>장면 ${items.length}개</span>
+      ${sc.voice_duration ? `<span>음성 ${esc(sc.voice_duration)}초</span>` : ""}
+      <span>조립: <b>${esc(asm.layout || "split")}</b></span>
+      <span class="chip ${brollOn ? "" : "ok"}">B-Roll ${brollOn ? "사용" : "사용 안 함"}</span>
+      <span class="chip ${perScene ? "ok" : ""}">${perScene ? "장면마다 B-Roll" : "B-Roll 전체 동일"}</span>
+    </div>
+    <div class="ref">
+      B-Roll 을 쓰지 않으면 장면이 <b>화면 전체</b>로 나오기 때문에, 화면에 보여줄 안내(사이트 주소·툴 이름)를
+      말풍선으로 넣을 수 있습니다. 대본 글자를 굽는 기능은 아닙니다(자막은 쇼츠/릴스가 자동 생성).
+      저장하면 이미지를 다시 만들지 않고 말풍선만 다시 그립니다.
+    </div>
+    <div class="row">
+      <button class="btn primary" id="bubSaveAll">모든 문구 적용</button>
+      <span class="muted" id="bubMsg"></span>
+      <span class="spacer"></span>
+      <button class="btn ghost" id="brbSave">B-Roll 설정 저장</button>
+      <span class="muted" id="brbMsg"></span>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button class="btn ghost" id="scReuse"
+              title="SDXL 을 다시 돌리지 않고 지금 있는 장면 이미지를 그대로 씁니다. 5단계를 '완료'로만 표시합니다.">♻ 기존 이미지 그대로 사용 (재생성 안 함)</button>
+      <span class="muted" id="scReuseMsg"></span>
+    </div>
+    <div class="ref">
+      장면 이미지가 이미 마음에 들면 위 <b>♻ 기존 이미지 그대로 사용</b>만 누르세요. 사진을 새로 만들지 않고
+      5단계를 완료로 표시하므로 6·7·10단계로 바로 넘어갑니다(수 분 걸리는 재생성 없음).
+      특정 장면만 다시 그리고 싶으면 각 장면의 <b>새로 생성</b> 버튼을 쓰세요.
+    </div>
+    <div class="ref">
+      B-Roll 을 <b>장면마다</b> 고르려면 위 <b>🎥 B-Roll 소스</b>에서 <b>장면마다 다른 B-Roll</b>을 체크하세요.
+      각 장면 상단에 그 장면의 B-Roll 이, <b>B-Roll 없음</b>을 고른 장면은 장면 이미지가 화면 전체를 쓵니다.
+      (장면별 B-Roll 모드에서는 위쪽 영역이 장면마다 생기거나 사라집니다)
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr));margin-top:10px">
+      ${items.map(it=>`<div class="art" style="flex-direction:column;align-items:stretch;background:#fff">
+        <img src="/api/scenes/image/${it.index}?t=${esc(it.mtime||0)}" alt="scene ${it.index}"
+             style="width:100%;height:auto;border-radius:8px;object-fit:contain;background:#f2f4f7">
+        <div class="meta" style="margin-top:6px">
+          <div class="nm">${it.index}번 · ${esc((it.duration||0).toString().slice(0,4))}초
+            ${it.motion ? '<span class="chip ok">모션</span>' : ''}
+            ${it.motion_stale ? '<span class="chip bad" title="이 장면의 모션 클립은 이전 이미지로 만든 것입니다. 7단계를 다시 실행하면 새 이미지로 다시 만들어집니다(그 전까지는 정지 이미지로 조립).">모션 옛 이미지 · 무시</span>' : ''}</div>
+          <div class="sub" style="white-space:normal;line-height:1.4">${esc((it.text||"").slice(0,70))}</div>
+        </div>
+        <input type="text" id="bub-${it.index}" placeholder="말풍선 문구 (비우면 없음)"
+               value="${esc(it.bubble_text||"")}" style="margin-top:6px">
+        <button class="btn sm ghost" data-bub="${it.index}" style="margin-top:6px">이 장면 적용</button>
+        <select data-brb="${it.index}" style="margin-top:6px;padding:5px;border:1px solid var(--line);border-radius:6px;font-size:12px">
+          <option value="inherit" ${!it.broll || it.broll.enabled === null || it.broll.enabled === undefined ? "selected" : ""}>B-Roll: 기본(전체와 동일)</option>
+          <option value="off" ${it.broll && it.broll.enabled === false ? "selected" : ""}>B-Roll: 없음(전체 화면)</option>
+          ${clips.map(c=>`<option value="clip:${esc(c.path)}" ${it.broll && it.broll.clip === c.path ? "selected" : ""}>${esc(c.label || c.name)}</option>`).join("")}
+        </select>
+      </div>`).join("")}
+    </div>
+  </div>`;
+
+  host.querySelectorAll("[data-bub]").forEach(b=>{
+    b.onclick = ()=> applyBubbles([parseInt(b.dataset.bub, 10)]);
+  });
+  $("#bubSaveAll").onclick = ()=> applyBubbles(items.map(i=>i.index));
+  $("#brbSave").onclick = saveSceneBroll;
+  const reuseBtn = $("#scReuse");
+  if(reuseBtn) reuseBtn.onclick = reuseScenes;
+}
+
+// 지금 있는 장면 이미지로 5단계를 완료 처리한다(이미지 재생성 없음)
+async function reuseScenes(){
+  const btn = $("#scReuse"), msg = $("#scReuseMsg");
+  if(btn){ btn.disabled = true; }
+  if(msg) msg.textContent = "적용 중…";
+  try{
+    const d = await api("/api/scenes/reuse", {});
+    const warn = (d.warnings || []).join(" / ");
+    if(msg) msg.textContent = `5단계 완료 처리 · 이미지 ${d.reused}장 그대로` + (warn ? ` · ${warn}` : "");
+    toast(`기존 이미지 ${d.reused}장으로 5단계 완료 처리 (재생성 없음)`);
+    await refresh();
+  }catch(e){
+    if(msg) msg.textContent = "";
+    toast(e.message, true);
+  }finally{
+    const b = $("#scReuse"); if(b) b.disabled = false;
+  }
+}
+
+async function saveSceneBroll(){
+  const items = Array.from(document.querySelectorAll("[data-brb]")).map(s=>{
+    const idx = parseInt(s.dataset.brb, 10);
+    const v = s.value || "inherit";
+    if(v === "off") return {index: idx, enabled: false, clip: ""};
+    if(v.startsWith("clip:")) return {index: idx, enabled: true, clip: v.slice(5)};
+    return {index: idx, enabled: null, clip: ""};
+  });
+  const msg = $("#brbMsg");
+  if(msg) msg.textContent = "저장 중…";
+  try{
+    const d = await api("/api/scenes/broll", {items});
+    if(msg) msg.textContent = `저장 ${d.changed}장면`;
+    toast("장면별 B-Roll 저장 · 10단계를 다시 실행하면 반영됩니다");
+    await refresh();
+  }catch(e){ if(msg) msg.textContent = ""; toast(e.message, true); }
+}
+
+async function applyBubbles(indices){
+  const items = indices.filter(n=>Number.isFinite(n))
+    .map(i=>({index:i, text: ($("#bub-"+i)?.value || "").trim()}));
+  if(!items.length) return toast("적용할 장면이 없습니다.", true);
+  const msg = $("#bubMsg"); if(msg) msg.textContent = "말풍선 적용 중…";
+  try{
+    const d = await api("/api/scenes/bubble", {items});
+    if(msg) msg.textContent = `적용 ${items.length}장면`;
+    toast(`말풍선 적용 · ${items.filter(i=>i.text).length}개 문구 (미리보기 다시 만들기 필요)`);
+    await refresh();
+  }catch(e){ if(msg) msg.textContent = ""; toast(e.message, true); }
+}
+
+async function uploadBroll(){
+  const f = $("#bfile")?.files?.[0];
+  if(!f) return toast("MP4 파일을 선택하세요.", true);
+  const fd = new FormData(); fd.append("file", f);
+  $("#bmsg").textContent = "업로드 중…";
+  try{
+    const r = await fetch("/api/broll/upload", {method:"POST", body: fd});
+    const d = await r.json().catch(()=>({}));
+    if(!r.ok || d.error) throw new Error(d.error || ("HTTP " + r.status));
+    $("#bmsg").textContent = f.name + " 업로드 완료";
+    toast("업로드 완료 · B-Roll 소스로 지정했습니다");
+    await refresh();
+  }catch(e){ $("#bmsg").textContent = ""; toast(e.message, true); }
+}
+
+/* ---------------- WanGP ---------------- */
+function renderWangp(){
+  const w = STATE.wangp || {};
+  if(!WANGP_BUILT){
+    $("#wangpSec").innerHTML = `
+    <h2 class="sec">🎬 WanGP 영상 생성 <small>Wan 2.2 5B FastWan · GPU</small></h2>
+    <div class="card">
+      <div class="kv" id="wStatus"></div>
+      <div class="row">
+        <button class="btn ghost" id="wStart">서버 시작</button>
+        <button class="btn ghost" id="wStop">서버 중지</button>
+        <a class="btn ghost" href="http://127.0.0.1:7860" target="_blank" rel="noreferrer">WanGP 웹UI</a>
+        <span class="muted" id="wHint"></span>
+      </div>
+      <textarea id="wPrompt" style="min-height:104px"
+        placeholder="영어 프롬프트. 예: A cute cartoon raccoon explaining excitedly to the camera, waving its paws, clean 2D animation, dark blue background, vertical 9:16"></textarea>
+      <div class="row">
+        <button class="btn ghost" id="wDefault">너구리 기본 프롬프트</button>
+        <label class="muted">해상도 <select id="wRes">
+          <option>480x832</option><option>608x832</option><option>480x480</option><option>832x480</option><option>720x1280</option>
+        </select></label>
+        <label class="muted">프레임 <input id="wFrames" type="number" min="25" max="241" step="4" style="width:76px"></label>
+        <label class="muted">스텝 <input id="wSteps" type="number" min="1" max="30" style="width:58px"></label>
+        <button class="btn primary" id="wGen">영상 생성</button>
+      </div>
+      <div class="row">
+        <label class="muted">조립 레이아웃 <select id="wLayout">
+          <option value="split">2분할 (상단 영상 + 하단 너구리)</option>
+          <option value="scenes">전체 화면 (장면 이미지·영상만 · B-Roll 없음)</option>
+          <option value="full">전체 화면 (배경 + 상단 B-Roll)</option>
+        </select></label>
+        <label class="muted">WanGP 영상 용도 <select id="wRole">
+          <option value="bottom_scenes">하단: 장면별 너구리 (이미지+줌/팬)</option>
+          <option value="bottom_wangp">하단: WanGP 단일 영상 (반복)</option>
+          <option value="top">상단 (B-Roll 대체)</option>
+        </select></label>
+        <button class="btn ghost" id="wSaveAsm">조립 설정 저장</button>
+      </div>
+      <div class="ref">81프레임 ≈ 3.4초 · 480p/4스텝이면 GTX 1080 Ti에서 3~5분.
+        서버(웹UI)를 켜둔 채로 생성하면 VRAM 이 부족할 수 있습니다.<br>
+        <b>장면별 모션</b>은 아래에서 고른 장면을 7단계(<code>scripts_generate_wangp_motion.py</code>)가
+        img2video 로 만들고, 10단계 조립에서 해당 구간에만 사용합니다. 실패하면 정지 이미지+줌/팬으로 계속됩니다.<br>
+        모션은 <b>말풍선이 없는 원본 이미지</b>로 만들고, 말풍선은 조립할 때 영상 위에 따로 얹습니다.
+        (WanGP 가 이미지를 다시 그리면 말풍선 글자가 뭉개지기 때문)<br>
+        <b>5단계로 이미지를 새로 만들면 옛 모션 클립은 자동으로 무시</b>됩니다(예전 그림·예전 말풍선이 영상에 나오는 사고 방지).
+        옛 클립을 다시 쓰려면 그 장면을 골라 7단계를 한 번 더 실행하세요.</div>
+      <div id="wMotion" style="margin-top:10px"></div>
+      <pre class="log" id="wLog" style="max-height:180px"></pre>
+      <div class="grid" id="wVideos" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));margin-top:10px"></div>
+    </div>`;
+    WANGP_BUILT = true;
+    $("#wStart").onclick = ()=> wangpServer("start");
+    $("#wStop").onclick = ()=> wangpServer("stop");
+    $("#wGen").onclick = wangpGenerate;
+    $("#wDefault").onclick = ()=>{
+      $("#wPrompt").value = "A cute cartoon raccoon character standing in front of a dark blue background, talking excitedly to the camera and gesturing with its paws, lively 2D animation, clean line art, bright studio lighting, vertical 9:16 framing";
+    };
+    $("#wSaveAsm").onclick = saveAssembly;
+  }
+
+  const srv = w.server || {}, st = w.job_state || {}, res = w.result || {};
+  const running = st.status === "running";
+  const prog = /\[PROGRESS\]\s*(\d+)%/.exec((st.log || []).slice(-60).join("\n"));
+  const genLabel = running ? `진행 중${prog ? " " + prog[1] + "%" : ""}`
+    : st.status === "failed" ? "실패" : res.success ? "완료" : "대기";
+  const srvLabel = srv.running ? `실행 중 (PID ${srv.pid})`
+    : srv.external ? "외부에서 실행 중 (직접 켠 WanGP)" : "중지";
+  $("#wStatus").innerHTML = [
+    `<span class="chip ${srv.running || srv.reachable ? "ok" : "bad"}">서버 ${srvLabel}</span>`,
+    `<span class="chip ${st.status === "failed" ? "bad" : "ok"}">생성 ${esc(genLabel)}</span>`,
+    res.elapsed_sec ? `<span class="chip">마지막 ${esc(res.elapsed_sec)}초</span>` : "",
+    res.model_type ? `<span class="chip">${esc(res.model_type)}</span>` : "",
+    st.error ? `<span class="chip bad">${esc(String(st.error).slice(0, 90))}</span>` : "",
+  ].join("");
+  $("#wHint").textContent = (srv.running || srv.external)
+    ? "WanGP 웹UI가 켜져 있으면 헤드리스 생성과 GPU/RAM 경합이 생깁니다."
+    : "서버를 켜지 않아도 생성됩니다 (헤드리스).";
+
+  if(!WANGP_PREFILL){
+    $("#wPrompt").value = (w.job && w.job.prompt) || "";
+    WANGP_PREFILL = true;
+  }
+  setIfIdle("#wRes", (w.job && w.job.resolution) || (w.defaults && w.defaults.resolution) || "480x832");
+  setIfIdle("#wFrames", (w.job && w.job.video_length) || (w.defaults && w.defaults.video_length) || 81);
+  setIfIdle("#wSteps", (w.job && w.job.num_inference_steps) || (w.defaults && w.defaults.num_inference_steps) || 4);
+  const asm = STATE.assembly || {};
+  setIfIdle("#wLayout", asm.layout || "split");
+  const roleSel = $("#wRole");
+  if(roleSel) roleSel.disabled = (asm.layout === "scenes");
+  setIfIdle("#wRole", asm.top_source === "wangp" ? "top"
+    : (asm.bottom_source === "scenes" || !asm.bottom_source) ? "bottom_scenes" : "bottom_wangp");
+
+  const logText = (st.log || []).slice(-60).join("\n");
+  if(sig("wlog", logText)){
+    const el = $("#wLog");
+    el.textContent = logText || "(대기 중)";
+    el.scrollTop = el.scrollHeight;
+  }
+  renderWangpMotion(w);
+
+  const vkey = (w.videos || []).map(v=>v.name).join(",");
+  if(sig("wvideos", vkey)){
+    $("#wVideos").innerHTML = (w.videos || []).length ? (w.videos || []).map((v,i)=>
+      `<div class="art" style="flex-direction:column;align-items:stretch">
+        <video src="/api/wangp/video/${i}" controls preload="metadata" style="width:100%;border-radius:8px"></video>
+        <div class="meta" style="margin-top:6px"><div class="nm">${esc(v.name)}</div>
+        <div class="sub">${fmtSize(v.size)} · ${esc(new Date(v.mtime*1000).toLocaleString("ko-KR"))}</div></div>
+        <a class="btn sm ghost" href="/api/wangp/video/${i}" download="${esc(v.name)}">저장</a></div>`).join("")
+      : `<div class="empty">생성된 영상이 없습니다.</div>`;
+  }
+}
+
+function renderWangpMotion(w){
+  const host = $("#wMotion");
+  if(!host) return;
+  const items = (STATE.scenes || {}).items || [];
+  const mo = w.motion || {};
+  const plan = (mo.plan || []).slice().sort((a,b)=>a-b);
+  const done = mo.done || [];
+  const key = JSON.stringify({plan, done, ids: items.map(i=>i.index),
+    bub: items.map(i=>i.bubble_text || "")});
+  if(!sig("wmotion", key)) return;
+
+  if(!items.length){
+    host.innerHTML = `<div class="empty">5단계 장면을 만들면 여기서 움직일 장면을 고를 수 있습니다.</div>`;
+    return;
+  }
+  host.innerHTML = `
+    <div class="ref"><b>장면별 모션 (7단계)</b> — 체크한 장면만 WanGP 로 움직입니다.
+      예정: <b>${plan.length ? plan.join(", ") + "번" : "없음(정지 이미지 + 줌/팬)"}</b>
+      ${done.length ? `· 완료: ${done.join(", ")}번` : ""}<br>
+      장면 1개당 3~5분(GPU) · 말풍선이 없는 원본으로 생성하고 말풍선은 조립할 때 영상 위에 얹습니다.</div>
+    <div class="row" id="wMotionList" style="flex-wrap:wrap;gap:8px;margin-top:6px">
+      ${items.map(it=>`<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-size:13px">
+        <input type="checkbox" data-mi="${it.index}" ${plan.includes(it.index)?"checked":""}>
+        ${it.index}번 ${done.includes(it.index)?"<span class=\"chip ok\">영상</span>":""}
+      </label>`).join("")}
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button class="btn sm primary" id="wMotionSave">모션 장면 저장</button>
+      <span class="muted" id="wMotionMsg"></span>
+    </div>`;
+  $("#wMotionSave").onclick = saveMotionPlan;
+}
+
+async function saveMotionPlan(){
+  const indices = Array.from(document.querySelectorAll("[data-mi]"))
+    .filter(c=>c.checked).map(c=>parseInt(c.dataset.mi, 10));
+  const msg = $("#wMotionMsg");
+  if(msg) msg.textContent = "저장 중…";
+  try{
+    const d = await api("/api/wangp/motion", {indices});
+    if(msg) msg.textContent = "";
+    toast(indices.length
+      ? `모션 장면 ${indices.length}개 저장 (${d.indices.join(", ")}번) · 7단계를 실행하세요`
+      : "모션 없음으로 저장 · 장면 이미지 + 줌/팬으로 만듭니다");
+    await refresh();
+  }catch(e){ if(msg) msg.textContent = ""; toast(e.message, true); }
+}
+
+async function wangpServer(action){
+  try{
+    const d = await api(`/api/wangp/server/${action}`, {});
+    toast(action === "start"
+      ? `WanGP 서버 시작 (PID ${d.pid}) · 첫 로딩에 1~2분 걸립니다`
+      : "WanGP 서버를 중지했습니다");
+    await refresh();
+  }catch(e){ toast(e.message, true); }
+}
+
+async function wangpGenerate(){
+  const prompt = ($("#wPrompt")?.value || "").trim();
+  if(prompt.length < 5) return toast("프롬프트를 입력하세요.", true);
+  const body = {prompt, resolution: $("#wRes").value,
+    video_length: parseInt($("#wFrames").value || "81", 10),
+    num_inference_steps: parseInt($("#wSteps").value || "4", 10)};
+  try{
+    await api("/api/wangp/generate", body);
+    toast("WanGP 생성 시작 · 3~5분 걸립니다");
+    await refresh();
+  }catch(e){ toast(e.message, true); }
+}
+
+async function saveAssembly(){
+  const role = $("#wRole").value;
+  const layout = $("#wLayout").value;
+  const body = {
+    layout,
+    top_source: layout === "scenes" ? "none" : (role === "top" ? "wangp" : "broll"),
+    bottom_source: layout === "scenes" ? "scenes"
+      : role === "top" ? "assets"
+      : role === "bottom_scenes" ? "scenes" : "wangp",
+  };
+  try{ await api("/api/assembly", body); toast("조립 설정 저장"); await refresh(); }
+  catch(e){ toast(e.message, true); }
+}
+
+/* ---------------- 대본 패널 ---------------- */
+// 직접 입력한 주제는 2초 폴링으로 화면이 다시 그려져도 유지한다
+let MANUAL = {topic:"", note:"", msg:""};
+
+async function makeManualScript(){
+  const topic = ($("#manualTopic")?.value || MANUAL.topic || "").trim();
+  const note  = ($("#manualNote")?.value || MANUAL.note || "").trim();
+  if(topic.length < 2) return toast("주제를 2자 이상 입력하세요.", true);
+  MANUAL = {topic, note, msg:"생성 중… (30~60초)"};
+  const btn = $("#manualGo");
+  if(btn){ btn.disabled = true; btn.textContent = "생성 중…"; }
+  const msg = $("#manualMsg"); if(msg) msg.textContent = MANUAL.msg;
+  try{
+    const d = await api("/api/script/manual", {topic, note});
+    dirty = false;
+    MANUAL.msg = `초안 완료 (${d.chars}자 · ${d.backend||"LLM"}) — 아래에서 검토하고 '승인'을 누르세요`;
+    toast(`대본 생성 완료 (${d.chars}자 · 트렌드 없이 만든 초안)`);
+    await refresh();
+    $("#scriptText")?.scrollIntoView({behavior:"smooth", block:"center"});
+  }catch(e){
+    MANUAL.msg = "실패: " + e.message;
+    toast(e.message, true);
+  }finally{
+    const m = $("#manualMsg"); if(m) m.textContent = MANUAL.msg;
+    const b = $("#manualGo"); if(b){ b.disabled = false; b.textContent = "이 주제로 대본 생성"; }
+  }
+}
+
+function manualCardHtml(){
+  return `<div class="card">
+    <div class="step-title">🎯 주제로 대본 만들기 <span class="badge optional">트렌드 없이</span></div>
+    <div class="ref">트렌드 수집·선택 기능은 그대로 있습니다. <b>내가 정한 주제</b>로 시작하고 싶을 때만 여기를 쓰세요.
+      결과는 아래 초안 편집기에 뜨고, <b>검토 → 승인</b> 을 눌러야 4단계로 넘어갑니다.
+      (트렌드 없이 만든 대본이라도 참고 영상·발췌는 넣지 않습니다)</div>
+    <div class="row" style="margin-top:8px">
+      <input id="manualTopic" type="text" maxlength="80" value="${esc(MANUAL.topic)}"
+             placeholder="주제 한 줄 (예: 어도비 구독 끊고 무료 툴로 갈아탄 후기)" style="flex:1;min-width:280px">
+    </div>
+    <div class="row" style="margin-top:6px">
+      <input id="manualNote" type="text" maxlength="120" value="${esc(MANUAL.note)}"
+             placeholder="(선택) 꼭 넣고 싶은 포인트" style="flex:1;min-width:280px">
+      <button class="btn primary" id="manualGo">이 주제로 대본 생성</button>
+      <span class="muted" id="manualMsg">${esc(MANUAL.msg||"")}</span>
+    </div>
+  </div>`;
+}
+
+function renderScript(){
+  const sc = STATE.script || {};
+  const ta = $("#scriptText");
+  if(!ta || !dirty){ 
+    const val = sc.draft || sc.approved || "";
+    if(ta){ if(!dirty) ta.value = val; } 
+  }
+  const meta = sc.meta || {};
+  const limit = sc.char_limit || 350;
+  const text = ta ? ta.value : (sc.draft||sc.approved||"");
+  const over = text.length > limit;
+
+  const html = `
+  <h2 class="sec">📝 대본 검토·승인 <small>수정 후 승인하면 4단계 TTS로 넘어갑니다</small></h2>
+  ${manualCardHtml()}
+  <div class="card" style="margin-top:10px">
+    <div class="kv">
+      ${meta.source==="manual"?`<span class="chip ok">수동 주제</span>`:""}
+      ${meta.backend?`<span>백엔드: ${esc(meta.backend)} ${meta.model?`/ ${esc(meta.model)}`:""}</span>`:""}
+      ${meta.keyword?`<span>키워드: ${esc(meta.keyword)}</span>`:""}
+      ${meta.trend?.title?`<span>참고: ${esc(meta.trend.title).slice(0,60)}</span>`:""}
+      ${meta.trimmed?`<span class="chip bad">길이 제한으로 잘림</span>`:""}
+    </div>
+    <textarea id="scriptText" placeholder="대본을 직접 입력해도 됩니다. (예: [excited] 너구리 등장! ...)" oninput="onScriptInput()">${esc(sc.draft||sc.approved||"")}</textarea>
+    <div class="row">
+      <span class="muted" id="charCount"></span>
+      <span class="spacer" style="flex:1"></span>
+      <button class="btn ghost" onclick="saveDraft()">초안 저장</button>
+      <button class="btn ghost" onclick="reloadDraft()">불러오기</button>
+      <button class="btn primary" onclick="approveScript(false)">승인</button>
+      <button class="btn primary" onclick="approveScript(true)">승인 후 음성 생성</button>
+    </div>
+    <div class="ref">ElevenLabs 무료 크레딧(월 1만자)을 아끼려면 ${limit}자 내외로 유지하세요. 감정 태그([excited] 등)는 그대로 둬도 됩니다.</div>
+  </div>`;
+  $("#scriptSec").innerHTML = html;
+  const topicIn = $("#manualTopic"), noteIn = $("#manualNote");
+  if(topicIn) topicIn.oninput = ()=>{ MANUAL.topic = topicIn.value; };
+  if(noteIn) noteIn.oninput = ()=>{ MANUAL.note = noteIn.value; };
+  const go = $("#manualGo");
+  if(go) go.onclick = makeManualScript;
+  updateCharCount();
+}
+
+function onScriptInput(){ dirty = true; updateCharCount(); }
+function updateCharCount(){
+  const ta = $("#scriptText"); if(!ta) return;
+  const n = ta.value.length, limit = (STATE.script||{}).char_limit || 350;
+  const el = $("#charCount");
+  el.textContent = `${n}자 / 권장 ${limit}자` + (n > limit ? " ⚠ 초과" : "");
+  el.style.color = n > limit ? "#c0392b" : "";
+}
+function currentScript(){ return ($("#scriptText")?.value || "").trim(); }
+
+async function saveDraft(){
+  const text = currentScript(); if(!text) return toast("대본이 비어 있습니다.", true);
+  try{
+    await api("/api/script", {text, target:"draft"});
+    dirty = false; toast("초안을 저장했습니다. (output/script_draft.txt)");
+    await refresh();
+  }catch(e){ toast(e.message, true); }
+}
+function reloadDraft(){
+  dirty = false;
+  const sc = STATE.script||{};
+  if($("#scriptText")) $("#scriptText").value = sc.draft || sc.approved || "";
+  updateCharCount(); toast("저장된 대본을 불러왔습니다.");
+}
+async function approveScript(thenTts){
+  const text = currentScript();
+  if(!text) return toast("승인할 대본이 없습니다. 초안 생성 또는 직접 입력하세요.", true);
+  try{
+    const d = await api("/api/approve", {text});
+    dirty = false;
+    toast(`대본 승인 완료 (${d.chars}자)`);
+    await refresh();
+    if(thenTts) await runStep("tts");
+  }catch(e){ toast(e.message, true); }
+}
+
+/* ---------------- CapCut 패널 ---------------- */
+function renderCapcut(){
+  const cc = STATE.capcut;
+  if(!cc){ $("#capcutSec").innerHTML=""; return; }
+  const comp = cc.composition || null;
+  const segs = (comp && comp.scenes) || [];
+  const tracks = (cc.tracks||[]).map(t=>`<tr><td>${esc(t.name)}</td><td>${esc(t.type)}</td><td class="num-right">${t.clips}</td></tr>`).join("");
+  const fitTxt = comp ? (comp.fit === "contain" ? "전체 보이기(블러 여백)"
+    : `꽉 채우기(${comp.anchor === "center" ? "가운데" : "머리"} 기준)`) : "";
+  const chips = comp
+    ? `<span class="chip ${comp.mode === "segments" ? "ok" : "bad"}">${comp.mode === "segments" ? "10단계와 같은 장면 프레임" : "예전 방식"}</span>
+       <span class="chip">상단 B-Roll ${esc(comp.top_px)}px / 하단 장면 ${esc(comp.bottom_px)}px</span>
+       <span class="chip">${esc(fitTxt)}</span>
+       <span class="chip">B-Roll ${comp.per_scene_broll ? "장면마다" : "사용 안 함"}</span>`
+    : `<span class="chip">배경 ${esc(cc.background?.source||"")}</span>
+       ${cc.broll?.path?`<span class="chip">B-Roll ${esc(cc.broll.duration_sec)}초</span>`:`<span class="chip">B-Roll 없음</span>`}`;
+  const segRows = segs.length ? `
+    <details style="margin-top:10px"><summary class="muted">장면별 배치 ${segs.length}개 보기</summary>
+      <table style="margin-top:8px"><thead><tr><th>장면</th><th class="num-right">길이</th><th>B-Roll</th><th class="num-right">상단/하단 px</th></tr></thead><tbody>
+      ${segs.map(s=>`<tr><td>${esc(s.index)}번</td><td class="num-right">${esc(s.duration)}초</td><td>${esc(s.broll || "—")}</td><td class="num-right">${esc(s.top_h)}/${esc(s.bottom_h)}</td></tr>`).join("")}
+      </tbody></table></details>` : "";
+  $("#capcutSec").innerHTML = `
+  <h2 class="sec">✂️ CapCut 초안 <small>드래프트 폴더에서 바로 열 수 있습니다</small></h2>
+  <div class="card">
+    <div class="ref"><b>${esc(cc.draft_name)}</b><br><code>${esc(cc.draft_dir)}</code></div>
+    <div class="row"><span class="chip">${esc(cc.duration_sec)}초</span>
+      <span class="chip">${cc.resolution?.width}×${cc.resolution?.height}</span>${chips}
+      ${(cc.warnings||[]).map(w=>`<span class="chip bad">${esc(w)}</span>`).join("")}</div>
+    <table style="margin-top:10px"><thead><tr><th>트랙</th><th>타입</th><th class="num-right">클립</th></tr></thead><tbody>${tracks}</tbody></table>
+    ${segRows}
+    <div class="row"><button class="btn ghost" id="btn-open-draft">폴더 열기</button></div>
+    <div class="ref">CapCut 앱 → 프로젝트 목록에서 이 드래프트를 열고 검수 후 내보내기 하세요. (자동 내보내기는 CapCut이 지원하지 않습니다)</div>
+    <div class="note">${comp ? (comp.same_as_preview
+      ? "이 초안은 <b>10단계 미리보기 MP4 와 완전히 같은 장면 프레임</b>으로 만들어졌습니다. 장면별 B-Roll·말풍선·화면 배치가 그대로라 두 결과가 어긋나지 않습니다."
+      : "장면 프레임 없이 만든 <b>예전 방식</b> 초안입니다. 5단계(장면 생성)를 먼저 실행하면 MP4 와 같은 배치로 만들어집니다.") : ""}</div>
+  </div>`;
+  const btn = document.getElementById("btn-open-draft");
+  if(btn) btn.onclick = () => openFolder(cc.draft_dir);
+}
+async function openFolder(path){
+  try{ await api("/api/open_folder", {path}); }catch(e){ toast(e.message, true); }
+}
+
+/* ---------------- 유튜브 업로드 문구 ---------------- */
+function renderYoutube(){
+  const host = $("#ytSec");
+  if(!host) return;
+  const y = STATE.youtube || {};
+  const meta = y.meta || {};
+  const has = !!(meta.title || meta.description);
+  const act = document.activeElement;
+  if(act && host.contains(act) && (act.tagName === "INPUT" || act.tagName === "TEXTAREA")) return;
+
+  const view = {t: meta.title, d: meta.description, th: meta.thumbnail,
+    g: meta.tags, s: meta.source, u: meta.updated_at, e: meta.error,
+    en: y.enabled, p: y.privacy, v: (y.video||{}).name, tk: (y.token !== false),
+    ao: y.auth_ok, ac: y.auth_checked_at, ad: y.auth_detail};
+  if(!sig("yt", view)) return;
+
+  host.innerHTML = `
+  <h2 class="sec">📺 유튜브 업로드 문구 <small>제목·설명·태그·썸네일 추천 (대본과 별도로 생성)</small></h2>
+  <div class="card">
+    <div class="kv">
+      <span class="chip ${y.enabled ? "ok" : "bad"}">업로드 ${y.enabled ? "사용" : "사용 안 함"}</span>
+      <span class="chip">공개 ${esc(y.privacy || "private")}</span>
+      ${meta.source ? `<span class="chip">${esc(meta.source)}${meta.provider ? " · " + esc(meta.provider) : ""}</span>` : ""}
+      ${meta.created_at ? `<span class="chip">${esc(String(meta.created_at).replace("T", " ").slice(0, 16))}</span>` : ""}
+      ${y.video ? `<span class="chip">최신 영상 ${esc(y.video.name)}</span>` : `<span class="chip bad">미리보기 MP4 없음</span>`}
+      ${y.auth_ok === false
+        ? `<span class="chip bad" title="${esc(String(y.auth_detail||"").slice(0,200))}">유튜브 인증 만료 — 다시 연결</span>`
+        : ((y.token !== false)
+            ? `<span class="chip ok">유튜브 인증 OK${y.auth_checked_at ? " · " + esc(String(y.auth_checked_at).replace("T"," ").slice(0,16)) : ""}</span>`
+            : `<span class="chip bad">유튜브 인증 필요</span>`)}
+    </div>
+    <div class="ref">
+      설명란에 대본을 그대로 넣지 않고 <b>새로 작성</b>합니다. AI 가 쓰는 <code>**강조**</code>, 별표, 백틱, 목록 기호 같은
+      특수문자는 자동으로 지우고, <b>썸네일 추천</b>은 설명문구 끝에 들어갑니다. 11단계 업로드가 이 문구를 사용합니다.
+    </div>
+    <div class="row">
+      <button class="btn primary" id="ytGen">${has ? "설명문구 다시 생성 (LLM)" : "설명문구 생성 (LLM)"}</button>
+      <button class="btn ghost" id="ytSave">저장</button>
+      <button class="btn ghost" id="ytAuth" title="업로드가 'invalid_grant: Token has been expired or revoked'로 실패할 때 누르세요">🔑 유튜브 다시 연결</button>
+      <span class="muted" id="ytMsg"></span>
+    </div>
+    <div class="ref" style="margin-top:6px">
+      업로드가 <code>invalid_grant: Token has been expired or revoked</code>로 실패하면
+      구글 쪽에서 토큰을 만료·폐기한 것입니다(6개월 미사용·비밀번호 변경·권한 철회 등).
+      <b>🔑 유튜브 다시 연결</b>을 누르면 새 콘솔 창이 열리고, 그 안의 주소/자동 열린 브라우저에서
+      <b>허용</b>만 누르면 <code>token.pickle</code> 이 새로 저장됩니다. 업로드 도중 토큰이 만료되면
+      11단계가 자동으로 브라우저 승인을 요청하기도 합니다.
+    </div>
+    <label class="muted" style="display:block;margin-top:8px">제목</label>
+    <input type="text" id="ytTitle" value="${esc(meta.title || "")}" placeholder="영상 제목" style="width:100%">
+    <label class="muted" style="display:block;margin-top:8px">설명문구 (평문·수정 가능)</label>
+    <textarea id="ytDesc" style="min-height:200px" placeholder="설명문구 생성 버튼을 누르면 여기에 채워집니다">${esc(meta.description || "")}</textarea>
+    <div class="row" style="margin-top:8px">
+      <label class="muted" style="flex:1">태그 <input type="text" id="ytTags" value="${esc((meta.tags || []).join(", "))}" style="width:100%"></label>
+      <label class="muted" style="flex:1">썸네일 추천 <input type="text" id="ytThumb" value="${esc(meta.thumbnail || "")}" style="width:100%"></label>
+    </div>
+    ${meta.error ? `<div class="note">LLM 실패 → 대본 기반 템플릿으로 만들었습니다: ${esc(String(meta.error).slice(0, 200))}</div>` : ""}
+  </div>`;
+
+  $("#ytGen").onclick = generateYoutubeMeta;
+  $("#ytSave").onclick = saveYoutubeMeta;
+  $("#ytAuth").onclick = reauthYoutube;
+}
+
+async function reauthYoutube(){
+  const msg = $("#ytMsg");
+  if(msg) msg.textContent = "인증 창 여는 중…";
+  try{
+    const d = await api("/api/youtube/auth", {});
+    toast(d.hint || "브라우저에서 승인을 완료하세요");
+  }catch(e){ toast(e.message, true); }
+  finally{ if(msg) msg.textContent = ""; }
+}
+
+async function generateYoutubeMeta(){
+  const msg = $("#ytMsg");
+  if(msg) msg.textContent = "생성 중… (LLM)";
+  try{
+    const d = await api("/api/youtube/meta/generate", {});
+    toast(d.meta?.source === "llm"
+      ? `설명문구 생성 완료 (${d.meta?.model || d.meta?.provider || "LLM"})`
+      : "LLM 없이 대본 기반 템플릿으로 만들었습니다");
+    await refresh();
+  }catch(e){ toast(e.message, true); }
+  finally{ if(msg) msg.textContent = ""; }
+}
+
+async function saveYoutubeMeta(){
+  const tags = ($("#ytTags")?.value || "").split(/[,\n#]+/).map(s=>s.trim()).filter(Boolean);
+  const msg = $("#ytMsg");
+  if(msg) msg.textContent = "저장 중…";
+  try{
+    await api("/api/youtube/meta", {
+      title: $("#ytTitle")?.value || "",
+      description: $("#ytDesc")?.value || "",
+      thumbnail: $("#ytThumb")?.value || "",
+      tags,
+    });
+    toast("업로드 문구 저장");
+    await refresh();
+  }catch(e){ toast(e.message, true); }
+  finally{ if(msg) msg.textContent = ""; }
+}
+
+/* ---------------- 액션 ---------------- */
+async function runStep(id){
+  if(busy) return;
+  busy = true;
+  try{
+    await api("/api/run/"+id, {});
+    logOpen.add(id);
+    toast("실행 시작: " + ((STATE.steps||[]).find(s=>s.id===id)?.name || id));
+    await refresh();
+  }catch(e){ toast(e.message, true); }
+  busy = false;
+}
+async function resetStep(id){
+  if(busy) return;
+  if(!confirm("이 단계의 상태와 로그를 초기화할까요? (산출물 파일은 삭제되지 않습니다)")) return;
+  try{ await api("/api/reset/"+id, {}); await refresh(); }catch(e){ toast(e.message, true); }
+}
+async function stopStep(id){
+  if(!confirm("실행을 중단할까요?\n지금까지 만들어진 파일은 그대로 남습니다.")) return;
+  try{
+    const d = await api("/api/stop/"+id, {});
+    toast(d.note || "중단했습니다. 다시 실행할 수 있습니다.");
+    await refresh();
+  }catch(e){ toast(e.message, true); }
+}
+async function nextStep(){
+  const steps = STATE.steps||[];
+  // 건너뜀(B-Roll 사용 안 함 / 유튜브 비활성)은 건너뛰고, 지금 실행 가능한 다음 단계를 찾는다
+  const pending = steps.filter(s=>!["done","skipped"].includes(s.status));
+  const next = pending.find(s=>s.id!=="upload" && s.can_run) || pending.find(s=>s.id!=="upload")
+    || pending[0];
+  if(!next) return toast("모든 단계가 완료되었습니다.");
+  if(!next.can_run) return toast(next.blocked_reason || "지금은 실행할 수 없습니다.", true);
+  await runStep(next.id);
+}
+async function runAll(){
+  if(busy) return;
+  if(!confirm("전체 자동 실행을 시작할까요?\n\n· 2단계 트렌드는 사람 확인 후 멈춥니다.\n· 5단계는 장면 이미지 8~14장을 만듭니다(약 1~2분).\n· 6단계는 B-Roll 설정(창/MP4)을 사용합니다. '사용 안 함'이면 자동으로 건너뜁니다.\n· 7단계 WanGP 모션은 선택한 장면 수 × 3~5분 걸립니다(GPU).\n· 11단계(업로드)는 config.youtube.enabled=true 일 때만 실행됩니다.")) return;
+  busy = true;
+  try{ await api("/api/run_all", {}); toast("전체 자동 실행을 시작했습니다."); await refresh(); }
+  catch(e){ toast(e.message, true); }
+  busy = false;
+}
+
+$("#btn-next").onclick = nextStep;
+$("#btn-auto").onclick = runAll;
+$("#btn-reset").onclick = async ()=>{
+  if(!confirm("전체 상태를 초기화할까요? (산출물 파일은 삭제되지 않습니다)")) return;
+  try{ await api("/api/reset_all", {}); await refresh(); }catch(e){ toast(e.message, true); }
+};
+document.querySelectorAll("#mode button").forEach(b=>{
+  b.onclick = async ()=>{
+    try{ await api("/api/mode", {mode:b.dataset.mode}); await refresh(); }catch(e){ toast(e.message, true); }
+  };
+});
+
+/* ---------------- 상태 갱신 ---------------- */
+async function refresh(){
+  try{
+    const r = await fetch("/api/state");
+    STATE = await r.json();
+    if(sig("header",{p:STATE.progress,r:STATE.running,n:STATE.now,m:STATE.mode,sys:STATE.system})) renderHeader();
+    if(sig("steps",STATE.steps)) renderSteps();
+    if(sig("summary",{c:STATE.channel,t:STATE.trends&&STATE.trends.selected,cc:STATE.capcut,p:STATE.pause,r:STATE.trends&&STATE.trends.confirmed})) renderSummary();
+    if(sig("trends",STATE.trends)) renderTrends();
+    if(sig("capcut",STATE.capcut)) renderCapcut();
+    if(sig("script",STATE.script) && !dirty) renderScript();
+    renderTts();
+    renderScenes();
+    renderBroll();
+    renderWangp();
+    renderYoutube();
+  }catch(e){ /* 폴링 실패는 조용히 무시 */ }
+}
+setInterval(refresh, 2000);
+renderHeader(); renderSteps(); renderSummary(); renderTrends(); renderCapcut(); renderScript();
+renderTts(); renderScenes(); renderBroll(); renderWangp(); renderYoutube();
+loadLlm();
+</script>
+</body>
+</html>
